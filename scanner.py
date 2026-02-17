@@ -6,11 +6,19 @@ import pandas as pd
 import time
 
 # --- AYARLAR ---
-# Taranacak Semboller (BIST ve Kripto Karışık)
-# Not: BIST hisselerinin sonuna .IS eklemeyi unutma.
+# BIST 50 (BIST 30 Dahil) Hisseleri - Yahoo Finance Formatı
 SEMBOLLER = [
-    "THYAO.IS", "ASELS.IS", "GARAN.IS", "SISE.IS", "KCHOL.IS", "AKBNK.IS", 
-    "EREGL.IS", "FROTO.IS", "TUPRS.IS", "BTC-USD", "ETH-USD", "SOL-USD"
+    "AEFES.IS", "AGHOL.IS", "AKBNK.IS", "AKSEN.IS", "ALARK.IS",
+    "ARCLK.IS", "ASELS.IS", "ASTOR.IS", "BIMAS.IS", "BRSAN.IS",
+    "CANTE.IS", "CIMSA.IS", "DOAS.IS", "DOHOL.IS", "ECILC.IS",
+    "EKGYO.IS", "ENJSA.IS", "ENKAI.IS", "EREGL.IS", "EUPWR.IS",
+    "FROTO.IS", "GARAN.IS", "GESAN.IS", "GUBRF.IS", "HALKB.IS",
+    "HEKTS.IS", "ISCTR.IS", "ISGYO.IS", "KCHOL.IS", "KONTR.IS",
+    "KOZAA.IS", "KOZAL.IS", "KRDMD.IS", "MGROS.IS", "ODAS.IS",
+    "OYAKC.IS", "PETKM.IS", "PGSUS.IS", "SAHOL.IS", "SASA.IS",
+    "SISE.IS", "SMRTG.IS", "SOKM.IS", "TAVHL.IS", "TCELL.IS",
+    "THYAO.IS", "TOASO.IS", "TSKB.IS", "TTKOM.IS", "TUPRS.IS",
+    "VAKBN.IS", "VESTL.IS", "YKBNK.IS"
 ]
 
 # GitHub Secrets'tan alınacak değişkenler
