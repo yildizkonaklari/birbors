@@ -1,0 +1,30 @@
+name: Borsa Sinyal Botu
+
+on:
+  schedule:
+    # Her 4 saatte bir çalıştır (UTC saatiyle)
+    - cron: '0 */4 * * *'
+  workflow_dispatch: # Manuel çalıştırmak için buton ekler
+
+jobs:
+  run-scanner:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Depoyu Çek (Checkout)
+      uses: actions/checkout@v3
+
+    - name: Python Kur
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Kütüphaneleri Yükle
+      run: |
+        pip install -r requirements.txt
+
+    - name: Tarayıcıyı Çalıştır
+      env:
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        CHAT_ID: ${{ secrets.CHAT_ID }}
+      run: python scanner.py
