@@ -98,7 +98,6 @@ def save_to_db(data):
     """Sinyali veritabanına kaydeder (Supabase REST API ile)"""
     if SUPABASE_URL and SUPABASE_KEY:
         if "ckgwpxsaclakcdzitzrb" in SUPABASE_URL:
-            # Fallback kullanılıyorsa logla (Sadece ilk sefer için belki ama şimdilik her kayıtta)
             pass 
             
         try:
@@ -141,15 +140,12 @@ def analiz_et(symbol):
             return None
 
         # --- 2. HAFTALIK ANALİZ ---
-        # Sütun isimleri bazen MultiIndex olabilir, düzeltmek gerekebilir
-        # yfinance son sürümlerde MultiIndex döndürüyor (Ticker -> Price Type)
         if isinstance(df_w.columns, pd.MultiIndex):
-             # Eğer sadece bir sembol indirdiysek seviyeyi düşürebiliriz
              try:
                 df_w = df_w.xs(symbol, level=1, axis=1)
                 df_h = df_h.xs(symbol, level=1, axis=1)
              except:
-                 pass # Belki zaten düzgündür veya farklı yapıdadır
+                 pass 
 
         # Basit SMA Hesaplama
         df_w['SMA_50'] = calculate_sma(df_w['Close'], 50)
@@ -193,11 +189,53 @@ def analiz_et(symbol):
         is_reversal = (body <= full * 0.15) or (lower_shadow >= body * 2)
 
         # --- 4. KARAR ---
-        # --- 4. KARAR (TEST MODU) ---
-        # Şartları çok gevşettik: Sadece verisi olan ve RSI < 70 olanları al
-        # Normalde: trend_up and on_support and oversold and is_reversal
+        # Sadece Aşırı Satım (RSI < 35) olanları al
+        # İsterseniz 'and trend_up' gibi şartları da ekleyebilirsiniz.
         
-        if rsi_val < 70: # TEST İÇİN GEVŞEK FİLTRE
+        if oversold: 
+            
+            # Hedefler
+            stop_loss = low_h * 0.95
+            tp1 = close_p * 1.05
+            tp2 = close_p * 1.10
+            
+            risk = close_p - stop_loss
+            reward = tp1 - close_p
+            rr = round(reward / risk, 2) if risk > 0 else 0
+
+            return {
+                "symbol": symbol,
+                "price": round(close_p, 2),
+                "rsi": round(rsi_val, 2),
+                "stop_loss": round(stop_loss, 2),
+                "target_1": round(tp1, 2),
+                "target_2": round(tp2, 2),
+                "note": "RSI < 35 SINYALI"
+            }
+            
+    except Exception as e:
+        # Hata bastırma, ama istenirse loglanabilir
+        # print(f"Hata ({symbol}): {e}")
+        return None
+
+def main():
+    print("Tarama başlatılıyor...")
+    sinyaller = []
+
+    for sembol in SEMBOLLER:
+        print(f"Analiz ediliyor: {sembol}", flush=True)
+        sonuc = analiz_et(sembol)
+        if sonuc:
+            print(f"\nSinyal bulundu: {sembol}")
+            sinyaller.append(sonuc)
+            save_to_db(sonuc) # <-- VERİTABANINA KAYDET
+        time.sleep(1) # API limitleri için bekleme
+
+    print(f"\nTarama bitti. Toplam {len(sinyaller)} sinyal bulundu.")
+    
+    # Telegram Debug Bilgisi
+    if not TELEGRAM_TOKEN or not CHAT_ID:
+        print("UYARI: Telegram Token veya Chat ID eksik! Mesaj gönderilemeyecek.")
             
             # Hedefler
             stop_loss = low_h * 0.95
@@ -249,7 +287,7 @@ def main():
         
         # Build list of messages, splitting if too long
         mesajlar = []
-        current_msg = "🚨 **ALIM FIRSATI (TEST MODU)** 🚨\n\n"
+        current_msg = "🚨 **CANLI ALIM FIRSATI (RSI < 35)** 🚨\n\n"
         
         for s in sinyaller:
             item_str = f"💎 *{s['symbol']}*\n"
