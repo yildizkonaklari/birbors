@@ -5,6 +5,34 @@ import pandas as pd
 import time
 import warnings
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+# --- ANTIBLOCK FIX ---
+# Yahoo Finance GitHub Actions IP'lerini engeller.
+# Bunu aşmak için "User-Agent" başlığı eklemeliyiz.
+session = requests.Session()
+session.headers.update({
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+})
+
+# SSL Hatası Fix (Opsiyonel ama güvenli)
+warnings.filterwarnings("ignore", category=InsecureRequestWarning)
+session.verify = False
+
+# Monkey Patch yfinance to use our session
+# yfinance 0.2.x için:
+import yfinance.shared as shared
+if hasattr(shared, '_create_session'):
+    shared._create_session = lambda: session
+    
+# Ayrıca requests.get'i de override edelim (Garanti olsun)
+_original_get = requests.get
+def patched_get(*args, **kwargs):
+    kwargs.setdefault('headers', session.headers)
+    kwargs.setdefault('verify', False)
+    return _original_get(*args, **kwargs)
+requests.get = patched_get
+
+# --- AYARLAR ---
 warnings.filterwarnings("ignore", category=InsecureRequestWarning)
 warnings.filterwarnings("ignore")
 # Original session remains

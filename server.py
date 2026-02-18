@@ -1,15 +1,31 @@
-# --- SSL FIX ---
-import warnings
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
-warnings.filterwarnings("ignore", category=InsecureRequestWarning)
-warnings.filterwarnings("ignore")
-
 import http.server
 import socketserver
 import json
 import yfinance as yf
 from urllib.parse import urlparse, parse_qs
 import requests
+import warnings
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+# --- ANTIBLOCK FIX ---
+session = requests.Session()
+session.headers.update({
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+})
+warnings.filterwarnings("ignore", category=InsecureRequestWarning)
+session.verify = False
+
+import yfinance.shared as shared
+if hasattr(shared, '_create_session'):
+    shared._create_session = lambda: session
+    
+_original_get = requests.get
+def patched_get(*args, **kwargs):
+    kwargs.setdefault('headers', session.headers)
+    return _original_get(*args, **kwargs)
+requests.get = patched_get
+
+import os
 
 import os
 
