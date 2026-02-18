@@ -1,76 +1,332 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlgoTrader Pro Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --accent-green: #00c853;
+            --accent-red: #ff3d00;
+            --accent-blue: #2979ff;
+            --border-color: #333;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 15px; /* Mobilde kenar boşluğu azaltıldı */
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h1 { margin: 0; font-size: 1.5rem; letter-spacing: 1px; }
+        h1 span { color: var(--accent-blue); font-weight: 600; }
+
+        /* İstatistik Kartları */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* Mobilde de 3 sütun sığdırmaya çalış */
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 600px) {
+            .stats-grid { grid-template-columns: 1fr; } /* Çok küçük ekranda alt alta */
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        .card h3 { margin: 0 0 5px 0; color: var(--text-muted); font-size: 0.8rem; }
+        .card .number { font-size: 1.8rem; font-weight: 700; }
+        .c-blue { color: var(--accent-blue); }
+        .c-green { color: var(--accent-green); }
+        .c-red { color: var(--accent-red); }
+
+        /* Kontrol Paneli (MOBİL UYUMLU DÜZEN) */
+        .control-panel {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column; /* Alt alta sırala */
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        input[type="text"] {
+            background-color: #2c2c2c;
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            width: 100%; /* Tam genişlik */
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            box-sizing: border-box; /* Padding dahil hesapla */
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        button {
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            font-size: 1rem;
+            flex: 1; /* Eşit genişlikte dağıl */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:active { transform: scale(0.98); }
+        .btn-add { background-color: var(--accent-blue); color: white; }
+        .btn-scan { background-color: var(--accent-green); color: black; }
+
+        /* Listeler */
+        .lists-container {
+            display: grid;
+            grid-template-columns: 1fr; /* Mobilde tek sütun */
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .lists-container { grid-template-columns: 2fr 1fr; } /* Masaüstünde yan yana */
+            .control-panel { flex-direction: row; } /* Masaüstünde yan yana */
+            .button-group { width: auto; }
+            input[type="text"] { width: auto; flex-grow: 1; }
+        }
+
+        .list-section {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        ul { list-style: none; padding: 0; margin: 0; }
+        
+        li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background-color: #252525;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            border-left: 4px solid transparent;
+        }
+
+        li.status-neutral { border-left-color: #555; }
+        li.status-buy { border-left-color: var(--accent-green); background-color: rgba(0, 200, 83, 0.1); }
+        li.status-sell { border-left-color: var(--accent-red); background-color: rgba(255, 61, 0, 0.1); }
+        li.status-error { border-left-color: #ffb74d; color: #ffb74d; }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 5px 10px;
+        }
+        .action-btn:hover { color: var(--accent-red); }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+        .badge-buy { background-color: var(--accent-green); color: black; }
+        .badge-sell { background-color: var(--accent-red); color: white; }
+        .badge-wait { background-color: #444; color: #ccc; }
+
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <header>
+            <h1>Algo<span>Trader</span></h1>
+            <div style="color: var(--text-muted); font-size: 0.9rem;">
+                <i class="fas fa-clock"></i> <span id="clock">00:00</span>
+            </div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="card">
+                <h3>Takip</h3>
+                <div class="number c-blue" id="total-stocks">0</div>
+            </div>
+            <div class="card">
+                <h3>Sinyal</h3>
+                <div class="number c-green" id="buy-signals">0</div>
+            </div>
+            <div class="card">
+                <h3>Hata</h3>
+                <div class="number c-red" id="error-stocks">0</div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <input type="text" id="stock-input" placeholder="HİSSE KODU (ÖRN: GARAN.IS)">
+            <div class="button-group">
+                <button class="btn-add" onclick="addStock()"><i class="fas fa-plus"></i> EKLE</button>
+                <button class="btn-scan" onclick="simulateScan()"><i class="fas fa-sync"></i> TARA</button>
+            </div>
+        </div>
+
+        <div class="lists-container">
+            <div class="list-section">
+                <div class="list-header">
+                    <h3><i class="fas fa-list"></i> Portföy</h3>
+                </div>
+                <ul id="main-stock-list">
+                    </ul>
+            </div>
+
+            <div class="list-section">
+                <div class="list-header">
+                    <h3><i class="fas fa-bolt"></i> Canlı Sinyaller</h3>
+                </div>
+                <ul id="signal-list">
+                    <li style="text-align:center; color:#555; font-size: 0.9rem;">Sinyal yok.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
     // --- AYARLAR (BURAYI DOLDUR) ---
     const SUPABASE_URL = "https://ckgwpxsaclakcdzitzrb.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrZ3dweHNhY2xha2Nkeml0enJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNjAzMjQsImV4cCI6MjA4NjkzNjMyNH0.Hl02XgwwHOWyYrI0fcH7OH19IwTSFX4z5Zhjlc8rvQY";
-    
-    // Bağlantıyı Kur
-    const supabase = supa.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // --- VERİ YÖNETİMİ ---
+    // --- BAĞLANTIYI KUR (DÜZELTİLMİŞ KISIM) ---
+    // Global 'supabase' nesnesinden createClient fonksiyonunu alıyoruz
+    // Çakışmayı önlemek için değişken adını 'supabaseClient' yaptık
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // --- VERİ YÖNETİMİ (Portföy için) ---
     let stocks = JSON.parse(localStorage.getItem('myStocks')) || [];
 
-    // --- BAŞLANGIÇ ---
-    function init() {
-        renderList(); // Kayıtlı hisseleri göster
-        fetchSignals(); // Veritabanından sinyalleri çek
-        startTime();
-    }
+    // --- SAYFA YÜKLENDİĞİNDE ÇALIŞACAKLAR ---
+    document.addEventListener('DOMContentLoaded', () => {
+        renderList();     // Kayıtlı hisseleri göster
+        fetchSignals();   // Veritabanından sinyalleri çek
+        startTime();      // Saati başlat
+        
+        // Enter tuşu ile hisse ekleme özelliği
+        const input = document.getElementById("stock-input");
+        if(input) {
+            input.addEventListener("keypress", function(event) {
+                if (event.key === "Enter") addStock();
+            });
+        }
+    });
 
-    // --- VERİTABANINDAN OKUMA ---
+    // --- VERİTABANINDAN SİNYAL OKUMA ---
     async function fetchSignals() {
         const btn = document.querySelector('.btn-scan');
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yükleniyor...';
+        if(btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yükleniyor...';
         
-        // Supabase'den son 10 sinyali çek
-        const { data, error } = await supabase
+        // Düzeltme: Artık 'supabaseClient' kullanıyoruz
+        const { data, error } = await supabaseClient
             .from('signals')
             .select('*')
             .order('created_at', { ascending: false })
-            .limit(10);
+            .limit(10); // Son 10 sinyali getir
 
         if (error) {
             console.error("Veri çekme hatası:", error);
-            btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Hata';
+            if(btn) btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Hata';
             return;
         }
 
-        // Sinyal Listesini Güncelle
+        // Sinyal Listesini Temizle ve Doldur
         const signalListEl = document.getElementById('signal-list');
-        signalListEl.innerHTML = '';
+        if (signalListEl) {
+            signalListEl.innerHTML = '';
 
-        if (data && data.length > 0) {
-            data.forEach(signal => {
-                const li = document.createElement('li');
-                li.className = 'status-buy'; // Hepsi AL sinyali
+            if (data && data.length > 0) {
+                data.forEach(signal => {
+                    const li = document.createElement('li');
+                    li.className = 'status-buy'; // Stil: Alış Sinyali
+                    
+                    // Tarihi formatla (Örn: 14:30)
+                    const date = new Date(signal.created_at).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
+
+                    li.innerHTML = `
+                        <div style="display:flex; flex-direction:column;">
+                            <strong>${signal.symbol}</strong>
+                            <span style="font-size:0.75rem; color:#ccc;">${date}</span>
+                        </div>
+                        <div style="text-align:right;">
+                            <span class="badge badge-buy">${signal.price}</span>
+                            <div style="font-size:0.7rem; color:#888;">RSI: ${signal.rsi}</div>
+                        </div>
+                    `;
+                    signalListEl.appendChild(li);
+                });
                 
-                // Tarihi formatla
-                const date = new Date(signal.created_at).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
-
-                li.innerHTML = `
-                    <div style="display:flex; flex-direction:column;">
-                        <strong>${signal.symbol}</strong>
-                        <span style="font-size:0.75rem; color:#ccc;">${date}</span>
-                    </div>
-                    <div style="text-align:right;">
-                        <span class="badge badge-buy">${signal.price} TL</span>
-                        <div style="font-size:0.7rem; color:#888;">RSI: ${signal.rsi}</div>
-                    </div>
-                `;
-                signalListEl.appendChild(li);
-            });
-        } else {
-            signalListEl.innerHTML = '<li style="text-align:center; color:#555;">Henüz sinyal yok.</li>';
+                // İstatistik güncelle
+                updateStats(data.length);
+            } else {
+                signalListEl.innerHTML = '<li style="text-align:center; color:#555;">Henüz sinyal yok.</li>';
+                updateStats(0);
+            }
         }
 
-        btn.innerHTML = '<i class="fas fa-sync"></i> YENİLE';
-        updateStats(data ? data.length : 0);
+        if(btn) btn.innerHTML = '<i class="fas fa-sync"></i> YENİLE';
     }
 
-    // --- LİSTELEME (Manuel Takip Kısmı) ---
+    // --- LİSTELEME (Manuel Portföy Kısmı) ---
     function renderList() {
         const listEl = document.getElementById('main-stock-list');
+        if (!listEl) return;
+        
         listEl.innerHTML = '';
         
         stocks.forEach((stock, index) => {
@@ -83,22 +339,28 @@
             listEl.appendChild(li);
         });
         
-        document.getElementById('total-stocks').innerText = stocks.length;
+        const totalEl = document.getElementById('total-stocks');
+        if(totalEl) totalEl.innerText = stocks.length;
     }
 
     function updateStats(signalCount) {
-        document.getElementById('buy-signals').innerText = signalCount;
+        const signalEl = document.getElementById('buy-signals');
+        if(signalEl) signalEl.innerText = signalCount;
     }
 
-    // --- DİĞER FONKSİYONLAR ---
+    // --- HİSSE EKLEME / ÇIKARMA ---
     function addStock() {
         const input = document.getElementById('stock-input');
+        if (!input) return;
+        
         const symbol = input.value.trim().toUpperCase();
         if (symbol && !stocks.find(s => s.symbol === symbol)) {
             stocks.push({ symbol: symbol });
             saveData();
             renderList();
             input.value = '';
+        } else {
+            alert("Hisse zaten ekli veya boş!");
         }
     }
 
@@ -112,18 +374,22 @@
         localStorage.setItem('myStocks', JSON.stringify(stocks));
     }
     
-    // Butona basınca verileri tekrar çek
+    // Butona basınca verileri tekrar çekmesi için fonksiyonu bağlıyoruz
     window.simulateScan = fetchSignals; 
 
-    // Saat
+    // --- SAAT FONKSİYONU ---
     function startTime() {
-        const today = new Date();
-        let h = today.getHours();
-        let m = today.getMinutes();
-        m = m < 10 ? "0" + m : m;
-        document.getElementById('clock').innerHTML = h + ":" + m;
+        const clockEl = document.getElementById('clock');
+        if (clockEl) {
+            const today = new Date();
+            let h = today.getHours();
+            let m = today.getMinutes();
+            m = m < 10 ? "0" + m : m;
+            clockEl.innerHTML = h + ":" + m;
+        }
         setTimeout(startTime, 1000);
     }
-
-    init();
 </script>
+
+    </body>
+</html>
