@@ -122,13 +122,20 @@ def save_to_db(data):
     else:
         print(f"Supabase kimlik bilgileri eksik. {data['symbol']} kaydedilmedi.")
 
+def calculate_macd(series, fast=12, slow=26, signal=9):
+    exp1 = series.ewm(span=fast, adjust=False).mean()
+    exp2 = series.ewm(span=slow, adjust=False).mean()
+    macd = exp1 - exp2
+    signal_line = macd.ewm(span=signal, adjust=False).mean()
+    return macd, signal_line
+
 def analiz_et(symbol):
     try:
         # Veri Çekme
         df_w = yf.download(symbol, period="2y", interval="1wk", progress=False, auto_adjust=True)
-        df_h = yf.download(symbol, period="1mo", interval="1h", progress=False, auto_adjust=True)
+        df_h = yf.download(symbol, period="3mo", interval="1d", progress=False, auto_adjust=True) # Günlük Veriye Geçtik (Daha kararlı)
 
-        if len(df_w) < 50 or len(df_h) < 14: return None
+        if len(df_w) < 50 or len(df_h) < 35: return None
 
         # MultiIndex fix
         if isinstance(df_w.columns, pd.MultiIndex):
@@ -137,59 +144,65 @@ def analiz_et(symbol):
                 df_h = df_h.xs(symbol, level=1, axis=1)
              except: pass 
 
-        # SMA 50
+        # --- HAFTALIK TREND ANALİZİ ---
         df_w['SMA_50'] = calculate_sma(df_w['Close'], 50)
         if pd.isna(df_w['SMA_50'].iloc[-1]): return None
-            
+        
+        # Ana Trend Yukarı mı? (Fiyat > Haftalık SMA 50)
         trend_up = df_w['Close'].iloc[-1] > df_w['SMA_50'].iloc[-1]
 
-        # Support
-        last_year = df_w.tail(52)
-        high_p = last_year['High'].max()
-        low_p = last_year['Low'].min()
-        fib_0618 = high_p - ((high_p - low_p) * 0.618)
-        on_support = abs(df_w['Close'].iloc[-1] - fib_0618) <= (df_w['Close'].iloc[-1] * 0.03)
-
+        # --- GÜNLÜK MOMENTUM & HACİM ---
         # RSI
         df_h['RSI'] = calculate_rsi(df_h['Close'], 14)
-        if len(df_h['RSI']) < 1: return None
         rsi_val = df_h['RSI'].iloc[-1]
-        if pd.isna(rsi_val): return None
         
-        oversold = rsi_val < 35
+        # MACD
+        macd, signal_line = calculate_macd(df_h['Close'])
+        macd_val = macd.iloc[-1]
+        signal_val = signal_line.iloc[-1]
+        prev_macd = macd.iloc[-2]
+        prev_signal = signal_line.iloc[-2]
 
-        # Formasyon
+        # MACD Kesişimi (Alım yönünde mi?)
+        # 1. MACD > Sinyal (Mevcut Durum)
+        # 2. Yeni Kesişim (Dün altındaydı, bugün üstünde)
+        macd_buy = macd_val > signal_val
+        macd_cross = (prev_macd < prev_signal) and (macd_val > signal_val)
+
+        # Hacim Artışı
+        vol_avg = df_h['Volume'].rolling(window=20).mean().iloc[-1]
+        vol_curr = df_h['Volume'].iloc[-1]
+        volume_spike = vol_curr > (vol_avg * 1.5) # Ortalamanın %50 fazlası hacim
+
+        # Mum Formasyonu (Dönüş) - Basit
         open_p = df_h['Open'].iloc[-1]
         close_p = df_h['Close'].iloc[-1]
-        high_h = df_h['High'].iloc[-1]
         low_h = df_h['Low'].iloc[-1]
-        
         body = abs(close_p - open_p)
-        full = high_h - low_h
-        if full == 0: return None
         lower_shadow = min(open_p, close_p) - low_h
-        is_reversal = (body <= full * 0.15) or (lower_shadow >= body * 2)
+        hammer = (lower_shadow > body * 2) # Çekiç Formasyonu
 
-        # KARAR (Canlı Mod: RSI < 35)
-        # Strateji: RSI < 35 olduğunda 'AL' sinyali ver.
-        # İsteğe bağlı olarak 'trend_up' ve 'on_support' eklenebilir.
-        if oversold: 
-            # Hedefler
-            stop_loss = low_h * 0.95
-            tp1 = close_p * 1.05
-            tp2 = close_p * 1.10
+        # --- KARAR MEKANİZMASI (KOMBO) ---
+        # Senaryo 1: Güçlü Trend Dönüşü (Trend Yukarı + RSI Uygun + MACD Kesişimi)
+        strong_reversal = trend_up and (rsi_val < 50) and macd_cross
+
+        # Senaryo 2: Aşırı Satım Tepkisi (RSI < 30 + Hacim Patlaması veya Çekiç)
+        oversold_bounce = (rsi_val < 35) and (volume_spike or hammer)
+
+        if strong_reversal or oversold_bounce:
+            signal_type = "GÜÇLÜ DÖNÜŞ" if strong_reversal else "TEPKİ ALIMI"
             
-            risk = close_p - stop_loss
-            reward = tp1 - close_p
-
+            stop_loss = low_h * 0.97
+            tp1 = close_p * 1.05
+            
             return {
                 "symbol": symbol,
                 "price": round(close_p, 2),
                 "rsi": round(rsi_val, 2),
                 "stop_loss": round(stop_loss, 2),
                 "target_1": round(tp1, 2),
-                "target_2": round(tp2, 2),
-                "note": "RSI < 35 (Aşırı Satım) Sinyali"
+                "target_2": round(close_p * 1.10, 2),
+                "note": f"{signal_type} | MACD: {'AL' if macd_buy else 'SAT'} | Vol: {'YÜKSEK' if volume_spike else 'NORMAL'}"
             }
             
     except Exception as e:
