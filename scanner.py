@@ -110,7 +110,7 @@ def save_to_db(data):
                 "symbol": data["symbol"],
                 "price": data["price"],
                 "rsi": data["rsi"],
-                "status": "AL"
+                "status": data["status"] 
             }
             response = requests.post(url, json=kayit, headers=headers)
             if response.status_code in [200, 201]:
@@ -183,27 +183,46 @@ def analiz_et(symbol):
         hammer = (lower_shadow > body * 2) # Çekiç Formasyonu
 
         # --- KARAR MEKANİZMASI (KOMBO) ---
-        # Senaryo 1: Güçlü Trend Dönüşü (Trend Yukarı + RSI Uygun + MACD Kesişimi)
+        # 1. AL SİNYALLERİ (BUY)
         strong_reversal = trend_up and (rsi_val < 50) and macd_cross
-
-        # Senaryo 2: Aşırı Satım Tepkisi (RSI < 30 + Hacim Patlaması veya Çekiç)
         oversold_bounce = (rsi_val < 35) and (volume_spike or hammer)
+        
+        # 2. SAT SİNYALLERİ (SELL)
+        overbought = rsi_val > 70
+        trend_break = (prev_macd > prev_signal) and (macd_val < signal_val) and (rsi_val > 50)
+        
+        status = None
+        note_txt = ""
 
         if strong_reversal or oversold_bounce:
+            status = "AL"
             signal_type = "GÜÇLÜ DÖNÜŞ" if strong_reversal else "TEPKİ ALIMI"
-            
             stop_loss = low_h * 0.97
             tp1 = close_p * 1.05
+            tp2 = close_p * 1.10
+            note_txt = f"{signal_type} | MACD: AL"
+
+        elif overbought or trend_break:
+            status = "SAT"
+            signal_type = "AŞIRI ALIM" if overbought else "TREND BOZULMASI"
+            stop_loss = df_h['High'].iloc[-1] * 1.03
+            tp1 = close_p * 0.95
+            tp2 = close_p * 0.90
+            note_txt = f"{signal_type} | RSI: {round(rsi_val,1)} | MACD: SAT"
             
-            return {
-                "symbol": symbol,
-                "price": round(close_p, 2),
-                "rsi": round(rsi_val, 2),
-                "stop_loss": round(stop_loss, 2),
-                "target_1": round(tp1, 2),
-                "target_2": round(close_p * 1.10, 2),
-                "note": f"{signal_type} | MACD: {'AL' if macd_buy else 'SAT'} | Vol: {'YÜKSEK' if volume_spike else 'NORMAL'}"
-            }
+        else:
+            return None
+
+        return {
+            "symbol": symbol,
+            "price": round(close_p, 2),
+            "rsi": round(rsi_val, 2),
+            "stop_loss": round(stop_loss, 2),
+            "target_1": round(tp1, 2),
+            "target_2": round(tp2, 2),
+            "status": status,
+            "note": note_txt
+        }
             
     except Exception as e:
         return None
@@ -230,9 +249,13 @@ def main():
         current_msg = "🚨 **CANLI ALIM FIRSATI (RSI < 35)** 🚨\n\n"
         
         for s in sinyaller:
-            item_str = f"💎 *{s['symbol']}*\n"
+            emoji = "🟢" if s['status'] == 'AL' else "🔴"
+            action = "ALIM" if s['status'] == 'AL' else "SATIŞ"
+            
+            item_str = f"{emoji} *{s['symbol']}* ({action})\n"
             item_str += f"💵 {s['price']} | RSI: {s['rsi']}\n"
-            item_str += f"🎯 TP1: {s['target_1']} | 🛑 STOP: {s['stop_loss']}\n"
+            item_str += f"🎯 Hedef: {s['target_1']} | 🛑 Stop: {s['stop_loss']}\n"
+            item_str += f"📝 {s['note']}\n"
             item_str += "----------------------\n"
             
             if len(current_msg) + len(item_str) > 3500:

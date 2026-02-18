@@ -482,7 +482,10 @@
                 if (data && data.length > 0) {
                     data.forEach(signal => {
                         const li = document.createElement('li');
-                        li.className = 'status-buy'; // Stil: Alış Sinyali
+                        const isBuy = signal.status === 'AL';
+                        li.className = isBuy ? 'status-buy' : 'status-sell';
+                        const badgeClass = isBuy ? 'badge-buy' : 'badge-sell';
+                        const typeText = isBuy ? 'ALIM' : 'SATIŞ';
 
                         // Tarihi formatla (Örn: 14:30)
                         const date = new Date(signal.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
@@ -490,10 +493,10 @@
                         li.innerHTML = `
                         <div style="display:flex; flex-direction:column;">
                             <strong>${signal.symbol}</strong>
-                            <span style="font-size:0.75rem; color:#ccc;">${date}</span>
+                            <span style="font-size:0.75rem; color:#ccc;">${date} • ${typeText}</span>
                         </div>
                         <div style="text-align:right;">
-                            <span class="badge badge-buy">${signal.price}</span>
+                            <span class="badge ${badgeClass}">${signal.price}</span>
                             <div style="font-size:0.7rem; color:#888;">RSI: ${signal.rsi}</div>
                         </div>
                     `;
