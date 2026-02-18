@@ -425,29 +425,62 @@
             document.getElementById('ai-modal').style.display = 'none';
         }
 
-        // --- PORTFÖYÜ GETİR ---
-        async function fetchPortfolio() {
-            const { data, error } = await supabaseClient
-                .from('portfolio')
-                .select('*')
-                .order('created_at', { ascending: true });
+        // --- GLOBAL DEĞİŞKENLER ---
+        let portfolioItems = []; // API'den gelen özet veri
 
-            if (error) {
-                console.error("Portföy yüklenemedi:", error);
-                return;
+        // --- PORTFÖYÜ GETİR (YENİ P/L MANTIĞI) ---
+        async function fetchPortfolio() {
+            try {
+                // Server.py üzerinden hesaplanmış özeti çek
+                const response = await fetch('/api/portfolio/summary');
+                if (!response.ok) throw new Error("Portföy verisi alınamadı");
+
+                const data = await response.json();
+                portfolioItems = data.items || [];
+
+                // Header İstatistiklerini Güncelle
+                updateHeaderStats(data);
+
+                renderList();
+            } catch (error) {
+                console.error("Portföy hatası:", error);
+            }
+        }
+
+        function updateHeaderStats(data) {
+            let totalValEl = document.getElementById('total-value-display');
+            if (!totalValEl) {
+                const headerContent = document.querySelector('.header-content');
+                if (headerContent) {
+                    const statsDiv = document.createElement('div');
+                    statsDiv.id = 'total-value-display';
+                    statsDiv.style.textAlign = 'right';
+                    statsDiv.style.fontSize = '0.9rem';
+                    headerContent.appendChild(statsDiv);
+                    totalValEl = statsDiv;
+                }
             }
 
-            stocks = data || [];
-            renderList();
+            if (totalValEl) {
+                const plClass = data.total_pl >= 0 ? 'c-green' : 'c-red';
+                const sign = data.total_pl >= 0 ? '+' : '';
+
+                totalValEl.innerHTML = `
+                    <div style="color:#aaa;">Toplam Değer</div>
+                    <div style="font-size:1.2rem; font-weight:bold;">${data.total_value.toFixed(2)} ₺</div>
+                    <div class="${plClass}">
+                        K/Z: ${sign}${data.total_pl.toFixed(2)} ₺
+                    </div>
+                `;
+            }
         }
 
         // --- SAYFA YÜKLENDİĞİNDE ÇALIŞACAKLAR ---
         document.addEventListener('DOMContentLoaded', () => {
-            fetchPortfolio(); // Supabase'den çek
-            fetchSignals();   // Veritabanından sinyalleri çek
-            startTime();      // Saati başlat
+            fetchPortfolio();
+            fetchSignals();
+            startTime();
 
-            // Enter tuşu ile hisse ekleme özelliği
             const input = document.getElementById("stock-input");
             if (input) {
                 input.addEventListener("keypress", function (event) {

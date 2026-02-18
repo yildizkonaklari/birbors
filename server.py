@@ -162,6 +162,90 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                  self.send_error(500, f"AI Hatası: {str(e)}")
 
+        elif parsed_path.path == "/api/portfolio/summary":
+            try:
+                # 1. İşlemleri Çek (Supabase 'transactions' tablosu)
+                if not SUPABASE_URL or not SUPABASE_KEY:
+                    raise Exception("Supabase ayarları eksik")
+                
+                url = f"{SUPABASE_URL}/rest/v1/transactions?select=*"
+                headers = {
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": f"Bearer {SUPABASE_KEY}"
+                }
+                
+                resp = requests.get(url, headers=headers)
+                if resp.status_code != 200:
+                    transactions = [] # Tablo yoksa veya boşsa
+                else:
+                    transactions = resp.json()
+
+                # 2. Portföy Durumunu Hesapla
+                holdings = {} # {symbol: {quantity: 0, avg_cost: 0, total_cost: 0}}
+                
+                for t in transactions:
+                    sym = t['symbol']
+                    qty = int(t['amount'])
+                    price = float(t['price'])
+                    typ = t['type'] # 'BUY' or 'SELL'
+                    
+                    if sym not in holdings:
+                        holdings[sym] = {'quantity': 0, 'total_cost': 0}
+                    
+                    if typ == 'BUY':
+                        holdings[sym]['quantity'] += qty
+                        holdings[sym]['total_cost'] += (qty * price)
+                    elif typ == 'SELL':
+                        # Basit mantık: Ortalama maliyet değişmez, miktar azalır
+                        # (FIFO/LIFO karmaşasına girmeden basit ağırlıklı ortalama)
+                        if holdings[sym]['quantity'] > 0:
+                            avg_cost = holdings[sym]['total_cost'] / holdings[sym]['quantity']
+                            holdings[sym]['total_cost'] -= (qty * avg_cost)
+                            holdings[sym]['quantity'] -= qty
+
+                # 3. Güncel Fiyatları Al ve P/L Hesapla
+                portfolio_summary = {
+                    "total_value": 0.0,
+                    "total_cost": 0.0,
+                    "total_pl": 0.0,
+                    "items": []
+                }
+                
+                for sym, data in holdings.items():
+                    if data['quantity'] > 0:
+                        # Güncel fiyatı al
+                        ticker = yf.Ticker(sym)
+                        current_price = ticker.fast_info.last_price
+                        
+                        market_value = data['quantity'] * current_price
+                        avg_cost = data['total_cost'] / data['quantity']
+                        pl = market_value - data['total_cost']
+                        pl_percent = (pl / data['total_cost']) * 100 if data['total_cost'] > 0 else 0
+                        
+                        portfolio_summary['total_value'] += market_value
+                        portfolio_summary['total_cost'] += data['total_cost']
+                        portfolio_summary['total_pl'] += pl
+                        
+                        portfolio_summary['items'].append({
+                            "symbol": sym,
+                            "quantity": data['quantity'],
+                            "avg_cost": round(avg_cost, 2),
+                            "current_price": round(current_price, 2),
+                            "market_value": round(market_value, 2),
+                            "pl": round(pl, 2),
+                            "pl_percent": round(pl_percent, 2)
+                        })
+
+                # API Yanıtı
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json; charset=utf-8')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps(portfolio_summary, ensure_ascii=False).encode('utf-8'))
+
+            except Exception as e:
+                self.send_error(500, f"Portföy Hatası: {str(e)}")
+
         else:
             # Standart dosya sunumu (index.html vb.)
             super().do_GET()
