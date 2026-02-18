@@ -222,17 +222,30 @@ def main():
             save_to_db(sonuc) # <-- VERİTABANINA KAYDET
         time.sleep(1) # API limitleri için bekleme
 
+    print(f"\nTarama bitti. Toplam {len(sinyaller)} sinyal bulundu.")
+    
+    # Telegram Debug Bilgisi
+    if not TELEGRAM_TOKEN or not CHAT_ID:
+        print("UYARI: Telegram Token veya Chat ID eksik! Mesaj gönderilemeyecek.")
+        print(f"Token Durumu: {'VAR' if TELEGRAM_TOKEN else 'YOK'}")
+        print(f"Chat ID Durumu: {'VAR' if CHAT_ID else 'YOK'}")
+
     if sinyaller:
-        mesaj = "🚨 **ALIM FIRSATI** 🚨\n\n"
+        print("Telegram mesajı hazırlanıyor...")
+        mesaj = "🚨 **ALIM FIRSATI (TEST MODU)** 🚨\n\n"
         for s in sinyaller:
             mesaj += f"💎 *{s['symbol']}*\n"
             mesaj += f"💵 {s['price']} | RSI: {s['rsi']}\n"
-            mesaj += f"🎯 TP1: {s['tp1']} | 🛑 STOP: {s['stop_loss']}\n"
+            mesaj += f"🎯 TP1: {s['target_1']} | 🛑 STOP: {s['stop_loss']}\n"
             mesaj += "----------------------\n"
         
-        send_telegram(mesaj)
+        try:
+            send_telegram(mesaj)
+            print("Telegram mesajı gönderildi.")
+        except Exception as e:
+            print(f"Telegram gönderme hatası: {e}")
     else:
-        print("\nSinyal yok.")
+        print("Sinyal yok. (Filtreler gevşetildiği halde bulunamadıysa veri çekme sorunu olabilir)")
 
 if __name__ == "__main__":
     main()
