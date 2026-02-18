@@ -731,38 +731,21 @@
             if (signalEl) signalEl.innerText = signalCount;
         }
 
-        // --- HİSSE EKLEME / ÇIKARMA ---
+        // --- ADD STOCK (Hisse Ekle / İşlem Gir) ---
         async function addStock() {
             const input = document.getElementById('stock-input');
-            if (!input) return;
-
             let symbol = input.value.trim().toUpperCase();
 
-            // Eğer .IS uzantısı yoksa otomatik ekle (BIST varsayımı)
-            if (symbol && !symbol.includes('.')) {
+            // BIST varsayımı
+            if (symbol && !symbol.includes('.') && symbol.length <= 5) {
                 symbol += ".IS";
             }
 
-            if (symbol && !stocks.find(s => s.symbol === symbol)) {
-                // UI Güncelleme (Geçici) - Bekletmeden
-                const btn = document.querySelector('.btn-add');
-                let originalText = btn ? btn.innerHTML : '';
-                if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            if (!symbol) return;
 
-                const { error } = await supabaseClient
-                    .from('portfolio')
-                    .insert({ symbol: symbol });
-
-                if (error) {
-                    alert("Ekleme hatası: " + error.message);
-                } else {
-                    input.value = '';
-                    fetchPortfolio(); // Listeyi yenile
-                }
-                if (btn) btn.innerHTML = originalText;
-            } else {
-                alert("Hisse zaten ekli veya boş!");
-            }
+            // Doğrudan işlem modalını aç
+            openTransactionModal(symbol);
+            input.value = '';
         }
 
         async function removeStock(symbol) {
