@@ -1,10 +1,8 @@
 import yfinance as yf
-import pandas_ta as ta
 import requests
 import os
 import pandas as pd
 import time
-from supabase import create_client, Client # YENİ EKLENDİ
 
 # --- AYARLAR ---
 # BIST 50 (BIST 30 Dahil) Hisseleri - Yahoo Finance Formatı
@@ -25,11 +23,19 @@ SEMBOLLER = [
 # Ortam Değişkenleri
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 CHAT_ID = os.environ.get("CHAT_ID")
-SUPABASE_URL = os.environ.get("SUPABASE_URL") # YENİ
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY") # YENİ
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
-# Supabase İstemcisi
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_URL else None
+def calculate_rsi(series, period=14):
+    delta = series.diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=period).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=period).mean()
+    
+    rs = gain / loss
+    return 100 - (100 / (1 + rs))
+
+def calculate_sma(series, period=50):
+    return series.rolling(window=period).mean()
 
 def send_telegram(message):
     if TELEGRAM_TOKEN and CHAT_ID:
@@ -39,11 +45,21 @@ def send_telegram(message):
             requests.post(url, json=payload)
         except Exception as e:
             print(f"Telegram hatası: {e}")
+    else:
+        print("Telegram kimlik bilgileri eksik. Mesaj gönderilmedi.")
 
 def save_to_db(data):
-    """Sinyali veritabanına kaydeder"""
-    if supabase:
+    """Sinyali veritabanına kaydeder (Supabase REST API ile)"""
+    if SUPABASE_URL and SUPABASE_KEY:
         try:
+            url = f"{SUPABASE_URL}/rest/v1/signals"
+            headers = {
+                "apikey": SUPABASE_KEY,
+                "Authorization": f"Bearer {SUPABASE_KEY}",
+                "Content-Type": "application/json",
+                "Prefer": "return=minimal"
+            }
+            
             # Veriyi hazırla
             kayit = {
                 "symbol": data["symbol"],
@@ -51,22 +67,42 @@ def save_to_db(data):
                 "rsi": data["rsi"],
                 "status": "AL" # Şimdilik sadece AL sinyali üretiyoruz
             }
-            # Supabase'e ekle
-            supabase.table("signals").insert(kayit).execute()
-            print(f"{data['symbol']} veritabanına kaydedildi.")
+            
+            response = requests.post(url, json=kayit, headers=headers)
+            if response.status_code in [200, 201]:
+                print(f"{data['symbol']} veritabanına kaydedildi.")
+            else:
+                print(f"Supabase Hatası: {response.status_code} - {response.text}")
+                
         except Exception as e:
             print(f"Veritabanı hatası: {e}")
+    else:
+        print(f"Supabase kimlik bilgileri eksik. {data['symbol']} kaydedilmedi.")
 
 def analiz_et(symbol):
     try:
         # --- 1. VERİ ÇEKME ---
+        # Haftalık Veri
         df_w = yf.download(symbol, period="2y", interval="1wk", progress=False, auto_adjust=True)
+        # Saatlik Veri
         df_h = yf.download(symbol, period="1mo", interval="1h", progress=False, auto_adjust=True)
 
-        if len(df_w) < 50 or len(df_h) < 14: return None
+        if len(df_w) < 50 or len(df_h) < 14: 
+            return None
 
         # --- 2. HAFTALIK ANALİZ ---
-        df_w['SMA_50'] = ta.sma(df_w['Close'], length=50)
+        # Sütun isimleri bazen MultiIndex olabilir, düzeltmek gerekebilir
+        # yfinance son sürümlerde MultiIndex döndürüyor (Ticker -> Price Type)
+        if isinstance(df_w.columns, pd.MultiIndex):
+             # Eğer sadece bir sembol indirdiysek seviyeyi düşürebiliriz
+             try:
+                df_w = df_w.xs(symbol, level=1, axis=1)
+                df_h = df_h.xs(symbol, level=1, axis=1)
+             except:
+                 pass # Belki zaten düzgündür veya farklı yapıdadır
+
+        # Basit SMA Hesaplama
+        df_w['SMA_50'] = calculate_sma(df_w['Close'], 50)
         
         # NaN kontrolü
         if pd.isna(df_w['SMA_50'].iloc[-1]): return None
@@ -82,8 +118,14 @@ def analiz_et(symbol):
         on_support = abs(df_w['Close'].iloc[-1] - fib_0618) <= (df_w['Close'].iloc[-1] * 0.03)
 
         # --- 3. SAATLİK ANALİZ ---
-        df_h['RSI'] = ta.rsi(df_h['Close'], length=14)
+        df_h['RSI'] = calculate_rsi(df_h['Close'], 14)
+        
+        if len(df_h['RSI']) < 1: return None
+        
         rsi_val = df_h['RSI'].iloc[-1]
+        
+        if pd.isna(rsi_val): return None
+        
         oversold = rsi_val < 35
 
         # Mum Formasyonu
@@ -94,6 +136,9 @@ def analiz_et(symbol):
         
         body = abs(close_p - open_p)
         full = high_h - low_h
+        
+        if full == 0: return None
+        
         lower_shadow = min(open_p, close_p) - low_h
         is_reversal = (body <= full * 0.15) or (lower_shadow >= body * 2)
 
@@ -121,6 +166,8 @@ def analiz_et(symbol):
             }
             
     except Exception as e:
+        # Hata bastırma, ama istenirse loglanabilir
+        # print(f"Hata ({symbol}): {e}")
         return None
 
 def main():
@@ -128,11 +175,13 @@ def main():
     sinyaller = []
 
     for sembol in SEMBOLLER:
+        print(f"Analiz ediliyor: {sembol}", end="\r")
         sonuc = analiz_et(sembol)
         if sonuc:
+            print(f"\nSinyal bulundu: {sembol}")
             sinyaller.append(sonuc)
             save_to_db(sonuc) # <-- VERİTABANINA KAYDET
-        time.sleep(1)
+        time.sleep(1) # API limitleri için bekleme
 
     if sinyaller:
         mesaj = "🚨 **ALIM FIRSATI** 🚨\n\n"
@@ -144,7 +193,7 @@ def main():
         
         send_telegram(mesaj)
     else:
-        print("Sinyal yok.")
+        print("\nSinyal yok.")
 
 if __name__ == "__main__":
     main()
