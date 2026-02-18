@@ -322,6 +322,45 @@
         if(btn) btn.innerHTML = '<i class="fas fa-sync"></i> YENİLE';
     }
 
+    // --- FİYAT ÇEKME (Portföy İçin) ---
+    async function fetchStockData(symbol, elementId) {
+        try {
+            // CORS Proxy kullanarak Yahoo Finance verisi çekme (Ücretsiz/Public API denemesi)
+            // Not: Bu yöntem her zaman %100 kararlı olmayabilir ama ücretsizdir.
+            const response = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`);
+            
+            if (!response.ok) throw new Error("Veri alınamadı");
+            const json = await response.json();
+            
+            const result = json.chart.result[0];
+            const meta = result.meta;
+            const price = meta.regularMarketPrice;
+            const prevClose = meta.chartPreviousClose;
+            
+            const change = price - prevClose;
+            const changePercent = (change / prevClose) * 100;
+            
+            // UI Güncelleme
+            const el = document.getElementById(elementId);
+            if (el) {
+                const colorClass = change >= 0 ? 'c-green' : 'c-red';
+                const sign = change >= 0 ? '+' : '';
+                el.innerHTML = `
+                    <div style="text-align:right;">
+                        <div style="font-size:1.1rem; font-weight:bold;">${price.toFixed(2)} ₺</div>
+                        <div class="${colorClass}" style="font-size:0.85rem;">
+                            ${sign}${change.toFixed(2)} (${sign}${changePercent.toFixed(2)}%)
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error(`${symbol} fiyatı çekilemedi:`, error);
+            const el = document.getElementById(elementId);
+            if(el) el.innerHTML = '<span style="color:#666; font-size:0.8rem;">Veri yok</span>';
+        }
+    }
+
     // --- LİSTELEME (Manuel Portföy Kısmı) ---
     function renderList() {
         const listEl = document.getElementById('main-stock-list');
@@ -332,11 +371,23 @@
         stocks.forEach((stock, index) => {
             const li = document.createElement('li');
             li.className = 'status-neutral';
+            
+            // Benzersiz ID oluştur (Fiyat güncellemesi için)
+            const priceId = `price-${index}`;
+            
             li.innerHTML = `
-                <strong>${stock.symbol}</strong>
-                <button class="action-btn" onclick="removeStock(${index})"><i class="fas fa-trash"></i></button>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <button class="action-btn" onclick="removeStock(${index})"><i class="fas fa-trash"></i></button>
+                    <strong>${stock.symbol}</strong>
+                </div>
+                <div id="${priceId}">
+                    <i class="fas fa-spinner fa-spin" style="font-size:0.8rem; color:#666;"></i>
+                </div>
             `;
             listEl.appendChild(li);
+            
+            // Fiyatı çek (Asenkron)
+            fetchStockData(stock.symbol, priceId);
         });
         
         const totalEl = document.getElementById('total-stocks');
@@ -376,6 +427,11 @@
     
     // Butona basınca verileri tekrar çekmesi için fonksiyonu bağlıyoruz
     window.simulateScan = fetchSignals; 
+    
+    // 30 saniyede bir portföy fiyatlarını güncelle
+    setInterval(() => {
+        renderList();
+    }, 30000);
 
     // --- SAAT FONKSİYONU ---
     function startTime() {
