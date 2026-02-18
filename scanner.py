@@ -246,18 +246,33 @@ def main():
 
     if sinyaller:
         print("Telegram mesajı hazırlanıyor...")
-        mesaj = "🚨 **ALIM FIRSATI (TEST MODU)** 🚨\n\n"
-        for s in sinyaller:
-            mesaj += f"💎 *{s['symbol']}*\n"
-            mesaj += f"💵 {s['price']} | RSI: {s['rsi']}\n"
-            mesaj += f"🎯 TP1: {s['target_1']} | 🛑 STOP: {s['stop_loss']}\n"
-            mesaj += "----------------------\n"
         
-        try:
-            send_telegram(mesaj)
-            print("Telegram mesajı gönderildi.")
-        except Exception as e:
-            print(f"Telegram gönderme hatası: {e}")
+        # Build list of messages, splitting if too long
+        mesajlar = []
+        current_msg = "🚨 **ALIM FIRSATI (TEST MODU)** 🚨\n\n"
+        
+        for s in sinyaller:
+            item_str = f"💎 *{s['symbol']}*\n"
+            item_str += f"💵 {s['price']} | RSI: {s['rsi']}\n"
+            item_str += f"🎯 TP1: {s['target_1']} | 🛑 STOP: {s['stop_loss']}\n"
+            item_str += "----------------------\n"
+            
+            # Telegram character limit is around 4096. Being safe with 3500.
+            if len(current_msg) + len(item_str) > 3500:
+                mesajlar.append(current_msg)
+                current_msg = "🚨 **DEVAMI** 🚨\n\n" + item_str
+            else:
+                current_msg += item_str
+                
+        mesajlar.append(current_msg) # Add the last chunk
+        
+        for msg in mesajlar:
+            try:
+                send_telegram(msg)
+                print("Telegram mesaj parçası gönderildi.")
+                time.sleep(1) # Rate limit protection
+            except Exception as e:
+                print(f"Telegram gönderme hatası: {e}")
     else:
         print("Sinyal yok. (Filtreler gevşetildiği halde bulunamadıysa veri çekme sorunu olabilir)")
 
