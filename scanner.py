@@ -179,26 +179,29 @@ def analiz_et(symbol):
         is_reversal = (body <= full * 0.15) or (lower_shadow >= body * 2)
 
         # --- 4. KARAR ---
-        if trend_up and on_support and oversold and is_reversal:
+        # --- 4. KARAR (TEST MODU) ---
+        # Şartları çok gevşettik: Sadece verisi olan ve RSI < 70 olanları al
+        # Normalde: trend_up and on_support and oversold and is_reversal
+        
+        if rsi_val < 70: # TEST İÇİN GEVŞEK FİLTRE
             
             # Hedefler
-            stop_loss = low_h * 0.99
-            tp1 = high_p
-            tp2 = high_p + ((high_p - low_p) * 0.272)
+            stop_loss = low_h * 0.95
+            tp1 = close_p * 1.05
+            tp2 = close_p * 1.10
             
-            risk = df_h['Close'].iloc[-1] - stop_loss
-            reward = tp1 - df_h['Close'].iloc[-1]
+            risk = close_p - stop_loss
+            reward = tp1 - close_p
             rr = round(reward / risk, 2) if risk > 0 else 0
 
             return {
                 "symbol": symbol,
-                "price": round(df_h['Close'].iloc[-1], 2),
+                "price": round(close_p, 2),
                 "rsi": round(rsi_val, 2),
                 "stop_loss": round(stop_loss, 2),
-                "tp1": round(tp1, 2),
-                "tp2": round(tp2, 2),
-                "rr_ratio": rr,
-                "fib_level": round(fib_0618, 2)
+                "target_1": round(tp1, 2),
+                "target_2": round(tp2, 2),
+                "note": "TEST SINYALI (RSI < 70)"
             }
             
     except Exception as e:
