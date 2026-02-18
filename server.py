@@ -1,8 +1,17 @@
+# --- SSL FIX ---
+import warnings
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+warnings.filterwarnings("ignore", category=InsecureRequestWarning)
+warnings.filterwarnings("ignore")
+
 import http.server
 import socketserver
 import json
 import yfinance as yf
 from urllib.parse import urlparse, parse_qs
+import requests
+
+import os
 
 import os
 

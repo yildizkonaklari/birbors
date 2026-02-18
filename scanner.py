@@ -3,6 +3,14 @@ import requests
 import os
 import pandas as pd
 import time
+import warnings
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+warnings.filterwarnings("ignore", category=InsecureRequestWarning)
+warnings.filterwarnings("ignore")
+# Original session remains
+import yfinance as yf # Keep import
+
+# --- AYARLAR ---
 
 # --- AYARLAR ---
 # BIST 50 (BIST 30 Dahil) Hisseleri - Yahoo Finance Formatı

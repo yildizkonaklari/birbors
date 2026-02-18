@@ -344,11 +344,27 @@
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // --- VERİ YÖNETİMİ (Portföy için) ---
-        let stocks = JSON.parse(localStorage.getItem('myStocks')) || [];
+        let stocks = [];
+
+        // --- PORTFÖYÜ GETİR ---
+        async function fetchPortfolio() {
+            const { data, error } = await supabaseClient
+                .from('portfolio')
+                .select('*')
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                console.error("Portföy yüklenemedi:", error);
+                return;
+            }
+
+            stocks = data || [];
+            renderList();
+        }
 
         // --- SAYFA YÜKLENDİĞİNDE ÇALIŞACAKLAR ---
         document.addEventListener('DOMContentLoaded', () => {
-            renderList();     // Kayıtlı hisseleri göster
+            fetchPortfolio(); // Supabase'den çek
             fetchSignals();   // Veritabanından sinyalleri çek
             startTime();      // Saati başlat
 
@@ -495,7 +511,7 @@
         }
 
         // --- HİSSE EKLEME / ÇIKARMA ---
-        function addStock() {
+        async function addStock() {
             const input = document.getElementById('stock-input');
             if (!input) return;
 
@@ -507,24 +523,48 @@
             }
 
             if (symbol && !stocks.find(s => s.symbol === symbol)) {
-                stocks.push({ symbol: symbol });
-                saveData();
-                renderList();
-                input.value = '';
+                // UI Güncelleme (Geçici) - Bekletmeden
+                const btn = document.querySelector('.btn-add');
+                let originalText = btn ? btn.innerHTML : '';
+                if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                const { error } = await supabaseClient
+                    .from('portfolio')
+                    .insert({ symbol: symbol });
+
+                if (error) {
+                    alert("Ekleme hatası: " + error.message);
+                } else {
+                    input.value = '';
+                    fetchPortfolio(); // Listeyi yenile
+                }
+                if (btn) btn.innerHTML = originalText;
             } else {
                 alert("Hisse zaten ekli veya boş!");
             }
         }
 
-        function removeStock(index) {
-            stocks.splice(index, 1);
-            saveData();
-            renderList();
+        async function removeStock(index) {
+            const stock = stocks[index];
+            if (!stock) return;
+
+            const btn = document.querySelectorAll('.action-btn')[index];
+            if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            const { error } = await supabaseClient
+                .from('portfolio')
+                .delete()
+                .eq('symbol', stock.symbol);
+
+            if (error) {
+                alert("Silme hatası: " + error.message);
+                if (btn) btn.innerHTML = '<i class="fas fa-trash"></i>';
+            } else {
+                fetchPortfolio(); // Listeyi yenile
+            }
         }
 
-        function saveData() {
-            localStorage.setItem('myStocks', JSON.stringify(stocks));
-        }
+        // saveData removed (Supabase Persistent)
 
         // Butona basınca verileri tekrar çekmesi için fonksiyonu bağlıyoruz
         window.simulateScan = fetchSignals;
