@@ -53,9 +53,24 @@ SEMBOLLER = [
 # Ortam Değişkenleri ve Fallback (Yedek) Değerler
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 CHAT_ID = os.environ.get("CHAT_ID")
+
 # Fallback değerler index.html'den alınmıştır
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://ckgwpxsaclakcdzitzrb.supabase.co")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrZ3dweHNhY2xha2Nkeml0enJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNjAzMjQsImV4cCI6MjA4NjkzNjMyNH0.Hl02XgwwHOWyYrI0fcH7OH19IwTSFX4z5Zhjlc8rvQY")
+# os.environ.get("KEY", "default") eğer KEY tanımlı ama boşsa ("") işe yaramaz.
+# Bu yüzden açıkça kontrol ediyoruz.
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+if not SUPABASE_URL:
+    SUPABASE_URL = "https://ckgwpxsaclakcdzitzrb.supabase.co"
+
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+if not SUPABASE_KEY:
+    SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrZ3dweHNhY2xha2Nkeml0enJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNjAzMjQsImV4cCI6MjA4NjkzNjMyNH0.Hl02XgwwHOWyYrI0fcH7OH19IwTSFX4z5Zhjlc8rvQY"
+
+print(f"--- AYARLAR ---")
+print(f"Supabase URL: {SUPABASE_URL}")
+print(f"Supabase Key: {'TANIZMI' if SUPABASE_KEY else 'EKSIK'}")
+print(f"Telegram Token: {'TANIZMI' if TELEGRAM_TOKEN else 'EKSIK'}")
+print(f"Chat ID: {'TANIZMI' if CHAT_ID else 'EKSIK'}")
+print(f"---------------")
 
 def calculate_rsi(series, period=14):
     delta = series.diff()
