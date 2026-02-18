@@ -12,16 +12,23 @@ jobs:
 
     steps:
     - name: Depoyu Çek (Checkout)
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Python Kur
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.12'
 
     - name: Kütüphaneleri Yükle
       run: |
         pip install -r requirements.txt
+        pip install --upgrade yfinance
+
+    - name: Sistem Kontrolü (Debug)
+      env: 
+        TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+        CHAT_ID: ${{ secrets.CHAT_ID }}
+      run: python check_system.py
 
     - name: Tarayıcıyı Çalıştır
       env:
