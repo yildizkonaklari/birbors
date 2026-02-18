@@ -19,7 +19,6 @@ warnings.filterwarnings("ignore", category=InsecureRequestWarning)
 session.verify = False
 
 # Monkey Patch yfinance to use our session
-# yfinance 0.2.x için:
 import yfinance.shared as shared
 if hasattr(shared, '_create_session'):
     shared._create_session = lambda: session
@@ -35,12 +34,7 @@ requests.get = patched_get
 # --- AYARLAR ---
 warnings.filterwarnings("ignore", category=InsecureRequestWarning)
 warnings.filterwarnings("ignore")
-# Original session remains
-import yfinance as yf # Keep import
 
-# --- AYARLAR ---
-
-# --- AYARLAR ---
 # BIST 50 (BIST 30 Dahil) Hisseleri - Yahoo Finance Formatı
 SEMBOLLER = [
     "AEFES.IS", "AGHOL.IS", "AKBNK.IS", "AKSEN.IS", "ALARK.IS",
@@ -56,11 +50,12 @@ SEMBOLLER = [
     "VAKBN.IS", "VESTL.IS", "YKBNK.IS"
 ]
 
-# Ortam Değişkenleri
+# Ortam Değişkenleri ve Fallback (Yedek) Değerler
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 CHAT_ID = os.environ.get("CHAT_ID")
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+# Fallback değerler index.html'den alınmıştır
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://ckgwpxsaclakcdzitzrb.supabase.co")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrZ3dweHNhY2xha2Nkeml0enJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNjAzMjQsImV4cCI6MjA4NjkzNjMyNH0.Hl02XgwwHOWyYrI0fcH7OH19IwTSFX4z5Zhjlc8rvQY")
 
 def calculate_rsi(series, period=14):
     delta = series.diff()
@@ -87,6 +82,10 @@ def send_telegram(message):
 def save_to_db(data):
     """Sinyali veritabanına kaydeder (Supabase REST API ile)"""
     if SUPABASE_URL and SUPABASE_KEY:
+        if "ckgwpxsaclakcdzitzrb" in SUPABASE_URL:
+            # Fallback kullanılıyorsa logla (Sadece ilk sefer için belki ama şimdilik her kayıtta)
+            pass 
+            
         try:
             url = f"{SUPABASE_URL}/rest/v1/signals"
             headers = {

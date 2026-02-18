@@ -32,18 +32,20 @@ Tarayıcı sonuçlarını ve portföyünüzü takip edebileceğiniz modern bir a
 
 ## Kullanım 🚀
 
-### Tarayıcıyı Çalıştırma
-Tarayıcıyı başlatmak için terminalde şu komutu çalıştırın:
-```bash
-python scanner.py
-```
-Script, BIST 50 listesindeki hisseleri sırayla analiz eder. Eğer bir alım fırsatı bulursa:
--   Konsola yazdırır.
--   Telegram üzerinden bildirim gönderir (Ayarlıysa).
--   Supabase veritabanına kaydeder (Ayarlıysa).
+### Tarayıcı ve Dashboard
+Bu proje Render üzerinde "Web Service" olarak çalıştığında `server.py` otomatik olarak arka planda taramayı başlatır.
 
+1.  **Otomatik Tarama**:
+    -   Her 15 dakikada bir `scanner.py` çalışır.
+    -   BIST 50 hisselerini tarar.
+    -   RSI < 70 olanları (veya formasyon yakalayanları) bulur.
+    -   Telegram'a bildirir ve Supabase veritabanına kaydeder.
+
+2.  **Manuel Tetikleme (Opsiyonel)**:
+    -   Eğer hemen tarama yapmak istiyorsanız Console/Terminal üzerinden `python scanner.py` çalıştırabilirsiniz.
+    
 ### Dashboard'u Açma
-`index.html` dosyasını bir web tarayıcısında açarak sinyalleri takip edebilirsiniz.
+Web sitesini açtığınızda veritabanındaki son sinyalleri görürsünüz. "YENİLE / TARA" butonu veritabanını tekrar sorgular. Anlık tarama sunucu tarafında otomatiktir.
 
 ## Konfigürasyon (Opsiyonel) ⚙️
 

@@ -77,7 +77,31 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
             super().do_GET()
 
 if __name__ == "__main__":
+    import threading
+    import time
+    import scanner
+
+    def run_scanner_loop():
+        """Arka planda periyodik olarak tarama yapar"""
+        # İlk çalışmada biraz bekle ki sunucu ayağa kalksın
+        time.sleep(10) 
+        while True:
+            try:
+                print("\n[Scheduler] Otomatik tarama başlatılıyor...", flush=True)
+                scanner.main()
+                print("[Scheduler] Tarama tamamlandı. 15 dakika bekleniyor...", flush=True)
+            except Exception as e:
+                print(f"[Scheduler] Hata: {e}", flush=True)
+            
+            # 15 Dakika bekle (900 saniye)
+            time.sleep(900)
+
+    # Scanner thread'ini başlat (Daemon = True, ana program kapanınca bu da kapanır)
+    t = threading.Thread(target=run_scanner_loop, daemon=True)
+    t.start()
+
     with socketserver.TCPServer(("", PORT), MyHandler) as httpd:
         print(f"Sunucu çalışıyor: http://localhost:{PORT}")
+        print("Otomatik tarama modülü aktif (15 dk arayla).")
         print("Durdurmak için Ctrl+C basın.")
         httpd.serve_forever()
