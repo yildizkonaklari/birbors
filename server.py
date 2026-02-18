@@ -213,9 +213,17 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                 
                 for sym, data in holdings.items():
                     if data['quantity'] > 0:
-                        # Güncel fiyatı al
-                        ticker = yf.Ticker(sym)
-                        current_price = ticker.fast_info.last_price
+                        # Güncel fiyatı al (Hata yönetimi ile)
+                        current_price = 0
+                        try:
+                            ticker = yf.Ticker(sym)
+                            # fast_info bazen hata verebilir, safe access
+                            current_price = ticker.fast_info.last_price
+                        except Exception as ye:
+                            print(f"{sym} fiyat hatası: {ye}")
+                            # Fallback: fiyat 0 ise hesaplamaya katılmaz veya eski fiyat bulunur
+                        
+                        if current_price is None: current_price = 0
                         
                         market_value = data['quantity'] * current_price
                         avg_cost = data['total_cost'] / data['quantity']
