@@ -214,7 +214,7 @@ def main():
     sinyaller = []
 
     for sembol in SEMBOLLER:
-        print(f"Analiz ediliyor: {sembol}", end="\r")
+        print(f"Analiz ediliyor: {sembol}", flush=True)
         sonuc = analiz_et(sembol)
         if sonuc:
             print(f"\nSinyal bulundu: {sembol}")
