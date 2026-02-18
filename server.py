@@ -35,7 +35,14 @@ import os
 
 import os
 
+
+import os
+
 PORT = int(os.environ.get("PORT", 8000))
+
+# --- SUPABASE CONFIG ---
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://ckgwpxsaclakcdzitzrb.supabase.co")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrZ3dweHNhY2xha2Nkeml0enJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNjAzMjQsImV4cCI6MjA4NjkzNjMyNH0.Hl02XgwwHOWyYrI0fcH7OH19IwTSFX4z5Zhjlc8rvQY")
 
 class MyHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):

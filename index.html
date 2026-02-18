@@ -443,8 +443,12 @@
                 if (error) console.error("Supabase portföy hatası:", error);
 
                 // 3. Verileri Birleştir
-                // Transaction'dan gelenler öncelikli. Transaction'da olmayan ama Portfolio'da olanları ekle.
                 let mergedItems = summaryData.items ? [...summaryData.items] : [];
+
+                // Debug Bilgisi
+                console.log("Transaction Items:", summaryData.items);
+                console.log("Simple Portfolio:", simplePortfolio);
+
                 const transactionSymbols = new Set(mergedItems.map(i => i.symbol));
 
                 if (simplePortfolio) {
