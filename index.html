@@ -428,18 +428,47 @@
         // --- GLOBAL DEĞİŞKENLER ---
         let portfolioItems = []; // API'den gelen özet veri
 
-        // --- PORTFÖYÜ GETİR (YENİ P/L MANTIĞI) ---
+        // --- PORTFÖYÜ GETİR (HİBRİT MANTIK) ---
         async function fetchPortfolio() {
             try {
-                // Server.py üzerinden hesaplanmış özeti çek
-                const response = await fetch('/api/portfolio/summary');
-                if (!response.ok) throw new Error("Portföy verisi alınamadı");
+                // 1. Transaction Özetini Çek (Server)
+                const summaryResp = await fetch('/api/portfolio/summary');
+                const summaryData = summaryResp.ok ? await summaryResp.json() : { items: [], total_value: 0, total_pl: 0 };
 
-                const data = await response.json();
-                portfolioItems = data.items || [];
+                // 2. Portfolio Tablosunu Çek (Supabase - Eski yöntemle eklenenler)
+                const { data: simplePortfolio, error } = await supabaseClient
+                    .from('portfolio')
+                    .select('*');
+
+                if (error) console.error("Supabase portföy hatası:", error);
+
+                // 3. Verileri Birleştir
+                // Transaction'dan gelenler öncelikli. Transaction'da olmayan ama Portfolio'da olanları ekle.
+                let mergedItems = summaryData.items ? [...summaryData.items] : [];
+                const transactionSymbols = new Set(mergedItems.map(i => i.symbol));
+
+                if (simplePortfolio) {
+                    for (const item of simplePortfolio) {
+                        if (!transactionSymbols.has(item.symbol)) {
+                            // Hiç işlem yoksa varsayılan değerlerle ekle
+                            mergedItems.push({
+                                symbol: item.symbol,
+                                quantity: 0,
+                                avg_cost: 0,
+                                current_price: 0, // Render sırasında çekilecek veya aşağıda güncellenecek
+                                market_value: 0,
+                                pl: 0,
+                                pl_percent: 0,
+                                is_simple_watch: true // Sadece izleme listesinde
+                            });
+                        }
+                    }
+                }
+
+                portfolioItems = mergedItems;
 
                 // Header İstatistiklerini Güncelle
-                updateHeaderStats(data);
+                updateHeaderStats(summaryData);
 
                 renderList();
             } catch (error) {
