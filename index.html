@@ -417,28 +417,20 @@
         }
 
         // --- FİYAT ÇEKME (Portföy İçin) ---
+        // --- FİYAT ÇEKME (Portföy İçin) ---
         async function fetchStockData(symbol, elementId) {
-            // Yedekli Proxy Listesi
-            const proxies = [
-                `https://corsproxy.io/?https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`,
-                `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`)}`
-            ];
+            try {
+                // Yerel Sunucudan Çek (server.py)
+                const response = await fetch(`/api/quote/${symbol}`);
 
-            let success = false;
+                if (!response.ok) throw new Error("Sunucu hatası");
+                const data = await response.json();
 
-            for (const url of proxies) {
-                try {
-                    const response = await fetch(url);
-                    if (!response.ok) continue; // Bir sonraki proxy'yi dene
+                const price = data.price;
+                const prevClose = data.prev_close;
 
-                    const json = await response.json();
-                    if (!json.chart || !json.chart.result) continue; // Boş veya hatalı yanıt
-
-                    const result = json.chart.result[0];
-                    const meta = result.meta;
-                    const price = meta.regularMarketPrice;
-                    const prevClose = meta.chartPreviousClose;
-
+                // Eğer veri geldiyse ve önceki kapanış varsa hesapla
+                if (price !== undefined && prevClose !== undefined) {
                     const change = price - prevClose;
                     const changePercent = (change / prevClose) * 100;
 
@@ -456,18 +448,11 @@
                         </div>
                     `;
                     }
-                    success = true;
-                    break; // Başarılı olduysa döngüden çık
-
-                } catch (error) {
-                    console.warn(`Proxy hatası (${url}):`, error);
                 }
-            }
-
-            if (!success) {
-                console.error(`${symbol} fiyatı tüm proxylerden çekilemedi.`);
+            } catch (error) {
+                console.error(`${symbol} fiyatı çekilemedi:`, error);
                 const el = document.getElementById(elementId);
-                if (el) el.innerHTML = '<span style="color:#666; font-size:0.8rem;">Veri yok (CORS)</span>';
+                if (el) el.innerHTML = '<span style="color:#666; font-size:0.8rem;">Veri yok (Local)</span>';
             }
         }
 
