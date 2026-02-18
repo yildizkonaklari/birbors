@@ -332,17 +332,52 @@
     </div>
 
     <!-- AI Analysis Modal -->
-    <div id="ai-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center;">
-        <div style="background:var(--card-bg); padding:20px; border-radius:12px; max-width:500px; width:90%; position:relative;">
-            <button onclick="closeModal()" style="position:absolute; top:10px; right:10px; background:none; border:none; color:white; font-size:1.2rem; cursor:pointer;">&times;</button>
-            <h3 id="modal-title" style="margin-top:0; color:var(--accent-blue);">Analiz</h3>
-            <div id="modal-content" style="line-height:1.6; color:#ddd; margin-top:15px;">
+    <div id="ai-modal"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; align-items:center; justify-content:center;">
+        <div
+            style="background:var(--card-bg); padding:24px; border-radius:12px; max-width:600px; width:90%; max-height:80vh; overflow-y:auto; position:relative; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+            <button onclick="closeModal()"
+                style="position:absolute; top:15px; right:15px; background:none; border:none; color:white; font-size:1.5rem; cursor:pointer; opacity:0.7;">&times;</button>
+            <h3 id="modal-title"
+                style="margin-top:0; color:var(--accent-blue); font-size:1.4rem; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:10px;">
+                Analiz</h3>
+            <div id="modal-content" class="markdown-body"
+                style="line-height:1.6; color:#ddd; margin-top:15px; font-size:0.95rem;">
                 Yükleniyor...
             </div>
         </div>
     </div>
 
+    <style>
+        /* Markdown Styles for Modal */
+        .markdown-body h1,
+        .markdown-body h2,
+        .markdown-body h3 {
+            color: var(--accent-blue);
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+
+        .markdown-body strong {
+            color: #fff;
+        }
+
+        .markdown-body ul {
+            padding-left: 20px;
+            margin-bottom: 10px;
+        }
+
+        .markdown-body li {
+            margin-bottom: 5px;
+        }
+
+        .markdown-body p {
+            margin-bottom: 10px;
+        }
+    </style>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
     <script>
         // --- AYARLAR (BURAYI DOLDUR) ---
@@ -362,18 +397,24 @@
             const modal = document.getElementById('ai-modal');
             const title = document.getElementById('modal-title');
             const content = document.getElementById('modal-content');
-            
+
             modal.style.display = 'flex';
             title.innerText = `${symbol} Analizi (AI)`;
             content.innerHTML = '<div style="text-align:center;"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Yapay Zeka Analiz Ediyor...</div>';
-            
+
             try {
                 const response = await fetch(`/api/analyze/${symbol}`);
                 if (!response.ok) throw new Error("Analiz hatası");
-                
+
                 const data = await response.json();
-                content.innerText = data.analysis || "Analiz yapılamadı.";
-                
+
+                // Markdown'ı HTML'e çevir (marked.js kullanarak)
+                if (data.analysis) {
+                    content.innerHTML = marked.parse(data.analysis);
+                } else {
+                    content.innerText = "Analiz yapılamadı.";
+                }
+
             } catch (error) {
                 console.error(error);
                 content.innerHTML = `<span style="color:var(--accent-red)">Hata: ${error.message}</span>`;

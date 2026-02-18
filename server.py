@@ -87,33 +87,66 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                     self.send_error(500, "OpenAI API Key eksik veya kütüphane yüklü değil.")
                     return
 
-                # Basit veri çekimi
+                # Veri Çekimi (Genişletilmiş)
                 ticker = yf.Ticker(symbol)
                 info = ticker.fast_info
                 
-                # Prompt hazırlığı
-                prompt = f"""
-                Sen uzman bir borsa analistisin. Aşağıdaki verileri kullanarak {symbol} hissesi için 
-                kısa, etkileyici ve yatırımcıya yön gösteren Türkçe bir analiz yaz. 
-                Yatırım tavsiyesi olmadığını belirten standart bir uyarı ekle ama metni boğma.
+                # Tarihsel Veri (Trend ve Hacim Analizi için son 1 ay)
+                hist = ticker.history(period="1mo")
+                hist_str = hist.tail(10).to_string() # Son 10 günü text olarak ver
+
+                # Prompt Hazırlığı (Gelişmiş)
+                system_prompt = """
+                Sen kıdemli bir "Equity Research + Quant" analistisin. 
+                Amacın, veri-temelli, çelişkileri yakalayan, riskleri açıkça yazan ve senaryolar üreten kapsamlı bir analiz raporu üretmek.
+                Yatırım tavsiyesi vermeden (YTD), tamamen objektif ve stratejik bir dille yaz.
+                """
                 
-                Veriler:
+                user_prompt = f"""
+                Analiz Edilecek Hisse: {symbol}
+                
+                CANLI VERİLER:
                 - Fiyat: {info.last_price}
                 - Önceki Kapanış: {info.previous_close}
                 - Piyasa Değeri: {info.market_cap}
-                - 52 Hafta En Yüksek: {info.year_high}
-                - 52 Hafta En Düşük: {info.year_low}
+                - 52 Hafta: {info.year_low} - {info.year_high}
                 
-                Analiz (Max 3 cümle):
+                SON 10 GÜNLÜK İŞLEM VERİLERİ (Trend ve Hacim Teyidi İçin):
+                {hist_str}
+                
+                Lütfen aşağıdaki yapıda detaylı bir analiz yap:
+                
+                1. **ÖZET KARAR & VADE ANALİZİ**
+                   - Alım/Satım/Bekle/Kademeli Topla kararını gerekçesiyle belirt.
+                   - Kısa, Orta ve Uzun Vade beklentilerini ayır.
+                
+                2. **VALÜASYON & ÇARPANLAR**
+                   - Mevcut fiyatı emsallerine veya geçmişine göre ucuz mu yoksa "haklı bir indirim" mi? (Yorumla)
+                
+                3. **TEKNİK ANALİZ & MOMENTUM**
+                   - Trend (1 Günlük/1 Haftalık) durumu.
+                   - Ana Destek ve Direnç seviyeleri.
+                   - Hacim analizi (Kırılım tuzağı riski var mı?).
+                   - RSI/MACD gibi momentum indikatörleri üzerinden yorum (Aşırı alım/satım?).
+                
+                4. **SENARYOLAR**
+                   - **İyi Senaryo:** Hangi seviye geçilirse yükseliş hızlanır?
+                   - **Kötü Senaryo:** Hangi destek kırılırsa stop olunmalı?
+                
+                5. **RİSK & ÇELİŞKİLER**
+                   - Temel veya teknikte gördüğün en büyük risk nedir?
+                
+                Not: Cevabı Markdown formatında, okunaklı başlıklarla ver.
                 """
                 
                 client = OpenAI(api_key=api_key)
                 completion = client.chat.completions.create(
                     model="gpt-3.5-turbo",
                     messages=[
-                        {"role": "system", "content": "Sen yardımcı bir finans asistanısın."},
-                        {"role": "user", "content": prompt}
-                    ]
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=0.7
                 )
                 
                 analysis_text = completion.choices[0].message.content
