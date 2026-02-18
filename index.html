@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="tr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,7 +23,8 @@
             background-color: var(--bg-color);
             color: var(--text-main);
             margin: 0;
-            padding: 15px; /* Mobilde kenar boşluğu azaltıldı */
+            padding: 15px;
+            /* Mobilde kenar boşluğu azaltıldı */
         }
 
         .dashboard-container {
@@ -39,34 +41,64 @@
             border-bottom: 1px solid var(--border-color);
         }
 
-        h1 { margin: 0; font-size: 1.5rem; letter-spacing: 1px; }
-        h1 span { color: var(--accent-blue); font-weight: 600; }
+        h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+        }
+
+        h1 span {
+            color: var(--accent-blue);
+            font-weight: 600;
+        }
 
         /* İstatistik Kartları */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr); /* Mobilde de 3 sütun sığdırmaya çalış */
+            grid-template-columns: repeat(3, 1fr);
+            /* Mobilde de 3 sütun sığdırmaya çalış */
             gap: 10px;
             margin-bottom: 20px;
         }
-        
+
         @media (max-width: 600px) {
-            .stats-grid { grid-template-columns: 1fr; } /* Çok küçük ekranda alt alta */
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            /* Çok küçük ekranda alt alta */
         }
 
         .card {
             background-color: var(--card-bg);
             padding: 15px;
             border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
             text-align: center;
         }
 
-        .card h3 { margin: 0 0 5px 0; color: var(--text-muted); font-size: 0.8rem; }
-        .card .number { font-size: 1.8rem; font-weight: 700; }
-        .c-blue { color: var(--accent-blue); }
-        .c-green { color: var(--accent-green); }
-        .c-red { color: var(--accent-red); }
+        .card h3 {
+            margin: 0 0 5px 0;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .card .number {
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+
+        .c-blue {
+            color: var(--accent-blue);
+        }
+
+        .c-green {
+            color: var(--accent-green);
+        }
+
+        .c-red {
+            color: var(--accent-red);
+        }
 
         /* Kontrol Paneli (MOBİL UYUMLU DÜZEN) */
         .control-panel {
@@ -74,7 +106,8 @@
             padding: 20px;
             border-radius: 12px;
             display: flex;
-            flex-direction: column; /* Alt alta sırala */
+            flex-direction: column;
+            /* Alt alta sırala */
             gap: 15px;
             margin-bottom: 30px;
         }
@@ -85,10 +118,12 @@
             color: white;
             padding: 15px;
             border-radius: 8px;
-            width: 100%; /* Tam genişlik */
+            width: 100%;
+            /* Tam genişlik */
             font-size: 1.1rem;
             text-transform: uppercase;
-            box-sizing: border-box; /* Padding dahil hesapla */
+            box-sizing: border-box;
+            /* Padding dahil hesapla */
         }
 
         .button-group {
@@ -105,29 +140,55 @@
             cursor: pointer;
             transition: opacity 0.2s;
             font-size: 1rem;
-            flex: 1; /* Eşit genişlikte dağıl */
+            flex: 1;
+            /* Eşit genişlikte dağıl */
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 8px;
         }
 
-        button:active { transform: scale(0.98); }
-        .btn-add { background-color: var(--accent-blue); color: white; }
-        .btn-scan { background-color: var(--accent-green); color: black; }
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-add {
+            background-color: var(--accent-blue);
+            color: white;
+        }
+
+        .btn-scan {
+            background-color: var(--accent-green);
+            color: black;
+        }
 
         /* Listeler */
         .lists-container {
             display: grid;
-            grid-template-columns: 1fr; /* Mobilde tek sütun */
+            grid-template-columns: 1fr;
+            /* Mobilde tek sütun */
             gap: 20px;
         }
 
         @media (min-width: 768px) {
-            .lists-container { grid-template-columns: 2fr 1fr; } /* Masaüstünde yan yana */
-            .control-panel { flex-direction: row; } /* Masaüstünde yan yana */
-            .button-group { width: auto; }
-            input[type="text"] { width: auto; flex-grow: 1; }
+            .lists-container {
+                grid-template-columns: 2fr 1fr;
+            }
+
+            /* Masaüstünde yan yana */
+            .control-panel {
+                flex-direction: row;
+            }
+
+            /* Masaüstünde yan yana */
+            .button-group {
+                width: auto;
+            }
+
+            input[type="text"] {
+                width: auto;
+                flex-grow: 1;
+            }
         }
 
         .list-section {
@@ -144,8 +205,12 @@
             padding-bottom: 10px;
         }
 
-        ul { list-style: none; padding: 0; margin: 0; }
-        
+        ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
         li {
             display: flex;
             justify-content: space-between;
@@ -157,10 +222,24 @@
             border-left: 4px solid transparent;
         }
 
-        li.status-neutral { border-left-color: #555; }
-        li.status-buy { border-left-color: var(--accent-green); background-color: rgba(0, 200, 83, 0.1); }
-        li.status-sell { border-left-color: var(--accent-red); background-color: rgba(255, 61, 0, 0.1); }
-        li.status-error { border-left-color: #ffb74d; color: #ffb74d; }
+        li.status-neutral {
+            border-left-color: #555;
+        }
+
+        li.status-buy {
+            border-left-color: var(--accent-green);
+            background-color: rgba(0, 200, 83, 0.1);
+        }
+
+        li.status-sell {
+            border-left-color: var(--accent-red);
+            background-color: rgba(255, 61, 0, 0.1);
+        }
+
+        li.status-error {
+            border-left-color: #ffb74d;
+            color: #ffb74d;
+        }
 
         .action-btn {
             background: none;
@@ -170,7 +249,10 @@
             font-size: 1.1rem;
             padding: 5px 10px;
         }
-        .action-btn:hover { color: var(--accent-red); }
+
+        .action-btn:hover {
+            color: var(--accent-red);
+        }
 
         .badge {
             padding: 4px 8px;
@@ -178,12 +260,24 @@
             font-size: 0.75rem;
             font-weight: bold;
         }
-        .badge-buy { background-color: var(--accent-green); color: black; }
-        .badge-sell { background-color: var(--accent-red); color: white; }
-        .badge-wait { background-color: #444; color: #ccc; }
 
+        .badge-buy {
+            background-color: var(--accent-green);
+            color: black;
+        }
+
+        .badge-sell {
+            background-color: var(--accent-red);
+            color: white;
+        }
+
+        .badge-wait {
+            background-color: #444;
+            color: #ccc;
+        }
     </style>
 </head>
+
 <body>
 
     <div class="dashboard-container">
@@ -223,7 +317,7 @@
                     <h3><i class="fas fa-list"></i> Portföy</h3>
                 </div>
                 <ul id="main-stock-list">
-                    </ul>
+                </ul>
             </div>
 
             <div class="list-section">
@@ -237,68 +331,68 @@
         </div>
     </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<script>
-    // --- AYARLAR (BURAYI DOLDUR) ---
-    const SUPABASE_URL = "https://ckgwpxsaclakcdzitzrb.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrZ3dweHNhY2xha2Nkeml0enJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNjAzMjQsImV4cCI6MjA4NjkzNjMyNH0.Hl02XgwwHOWyYrI0fcH7OH19IwTSFX4z5Zhjlc8rvQY";
+    <script>
+        // --- AYARLAR (BURAYI DOLDUR) ---
+        const SUPABASE_URL = "https://ckgwpxsaclakcdzitzrb.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrZ3dweHNhY2xha2Nkeml0enJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNjAzMjQsImV4cCI6MjA4NjkzNjMyNH0.Hl02XgwwHOWyYrI0fcH7OH19IwTSFX4z5Zhjlc8rvQY";
 
-    // --- BAĞLANTIYI KUR (DÜZELTİLMİŞ KISIM) ---
-    // Global 'supabase' nesnesinden createClient fonksiyonunu alıyoruz
-    // Çakışmayı önlemek için değişken adını 'supabaseClient' yaptık
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        // --- BAĞLANTIYI KUR (DÜZELTİLMİŞ KISIM) ---
+        // Global 'supabase' nesnesinden createClient fonksiyonunu alıyoruz
+        // Çakışmayı önlemek için değişken adını 'supabaseClient' yaptık
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // --- VERİ YÖNETİMİ (Portföy için) ---
-    let stocks = JSON.parse(localStorage.getItem('myStocks')) || [];
+        // --- VERİ YÖNETİMİ (Portföy için) ---
+        let stocks = JSON.parse(localStorage.getItem('myStocks')) || [];
 
-    // --- SAYFA YÜKLENDİĞİNDE ÇALIŞACAKLAR ---
-    document.addEventListener('DOMContentLoaded', () => {
-        renderList();     // Kayıtlı hisseleri göster
-        fetchSignals();   // Veritabanından sinyalleri çek
-        startTime();      // Saati başlat
-        
-        // Enter tuşu ile hisse ekleme özelliği
-        const input = document.getElementById("stock-input");
-        if(input) {
-            input.addEventListener("keypress", function(event) {
-                if (event.key === "Enter") addStock();
-            });
-        }
-    });
+        // --- SAYFA YÜKLENDİĞİNDE ÇALIŞACAKLAR ---
+        document.addEventListener('DOMContentLoaded', () => {
+            renderList();     // Kayıtlı hisseleri göster
+            fetchSignals();   // Veritabanından sinyalleri çek
+            startTime();      // Saati başlat
 
-    // --- VERİTABANINDAN SİNYAL OKUMA ---
-    async function fetchSignals() {
-        const btn = document.querySelector('.btn-scan');
-        if(btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yükleniyor...';
-        
-        // Düzeltme: Artık 'supabaseClient' kullanıyoruz
-        const { data, error } = await supabaseClient
-            .from('signals')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(10); // Son 10 sinyali getir
+            // Enter tuşu ile hisse ekleme özelliği
+            const input = document.getElementById("stock-input");
+            if (input) {
+                input.addEventListener("keypress", function (event) {
+                    if (event.key === "Enter") addStock();
+                });
+            }
+        });
 
-        if (error) {
-            console.error("Veri çekme hatası:", error);
-            if(btn) btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Hata';
-            return;
-        }
+        // --- VERİTABANINDAN SİNYAL OKUMA ---
+        async function fetchSignals() {
+            const btn = document.querySelector('.btn-scan');
+            if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yükleniyor...';
 
-        // Sinyal Listesini Temizle ve Doldur
-        const signalListEl = document.getElementById('signal-list');
-        if (signalListEl) {
-            signalListEl.innerHTML = '';
+            // Düzeltme: Artık 'supabaseClient' kullanıyoruz
+            const { data, error } = await supabaseClient
+                .from('signals')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(10); // Son 10 sinyali getir
 
-            if (data && data.length > 0) {
-                data.forEach(signal => {
-                    const li = document.createElement('li');
-                    li.className = 'status-buy'; // Stil: Alış Sinyali
-                    
-                    // Tarihi formatla (Örn: 14:30)
-                    const date = new Date(signal.created_at).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
+            if (error) {
+                console.error("Veri çekme hatası:", error);
+                if (btn) btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Hata';
+                return;
+            }
 
-                    li.innerHTML = `
+            // Sinyal Listesini Temizle ve Doldur
+            const signalListEl = document.getElementById('signal-list');
+            if (signalListEl) {
+                signalListEl.innerHTML = '';
+
+                if (data && data.length > 0) {
+                    data.forEach(signal => {
+                        const li = document.createElement('li');
+                        li.className = 'status-buy'; // Stil: Alış Sinyali
+
+                        // Tarihi formatla (Örn: 14:30)
+                        const date = new Date(signal.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+
+                        li.innerHTML = `
                         <div style="display:flex; flex-direction:column;">
                             <strong>${signal.symbol}</strong>
                             <span style="font-size:0.75rem; color:#ccc;">${date}</span>
@@ -308,74 +402,90 @@
                             <div style="font-size:0.7rem; color:#888;">RSI: ${signal.rsi}</div>
                         </div>
                     `;
-                    signalListEl.appendChild(li);
-                });
-                
-                // İstatistik güncelle
-                updateStats(data.length);
-            } else {
-                signalListEl.innerHTML = '<li style="text-align:center; color:#555;">Henüz sinyal yok.</li>';
-                updateStats(0);
+                        signalListEl.appendChild(li);
+                    });
+
+                    // İstatistik güncelle
+                    updateStats(data.length);
+                } else {
+                    signalListEl.innerHTML = '<li style="text-align:center; color:#555;">Henüz sinyal yok.</li>';
+                    updateStats(0);
+                }
             }
+
+            if (btn) btn.innerHTML = '<i class="fas fa-sync"></i> YENİLE';
         }
 
-        if(btn) btn.innerHTML = '<i class="fas fa-sync"></i> YENİLE';
-    }
+        // --- FİYAT ÇEKME (Portföy İçin) ---
+        async function fetchStockData(symbol, elementId) {
+            // Yedekli Proxy Listesi
+            const proxies = [
+                `https://corsproxy.io/?https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`,
+                `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`)}`
+            ];
 
-    // --- FİYAT ÇEKME (Portföy İçin) ---
-    async function fetchStockData(symbol, elementId) {
-        try {
-            // CORS Proxy kullanarak Yahoo Finance verisi çekme (Ücretsiz/Public API denemesi)
-            // Not: Bu yöntem her zaman %100 kararlı olmayabilir ama ücretsizdir.
-            const response = await fetch(`https://corsproxy.io/?https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`);
-            
-            if (!response.ok) throw new Error("Veri alınamadı");
-            const json = await response.json();
-            
-            const result = json.chart.result[0];
-            const meta = result.meta;
-            const price = meta.regularMarketPrice;
-            const prevClose = meta.chartPreviousClose;
-            
-            const change = price - prevClose;
-            const changePercent = (change / prevClose) * 100;
-            
-            // UI Güncelleme
-            const el = document.getElementById(elementId);
-            if (el) {
-                const colorClass = change >= 0 ? 'c-green' : 'c-red';
-                const sign = change >= 0 ? '+' : '';
-                el.innerHTML = `
-                    <div style="text-align:right;">
-                        <div style="font-size:1.1rem; font-weight:bold;">${price.toFixed(2)} ₺</div>
-                        <div class="${colorClass}" style="font-size:0.85rem;">
-                            ${sign}${change.toFixed(2)} (${sign}${changePercent.toFixed(2)}%)
+            let success = false;
+
+            for (const url of proxies) {
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) continue; // Bir sonraki proxy'yi dene
+
+                    const json = await response.json();
+                    if (!json.chart || !json.chart.result) continue; // Boş veya hatalı yanıt
+
+                    const result = json.chart.result[0];
+                    const meta = result.meta;
+                    const price = meta.regularMarketPrice;
+                    const prevClose = meta.chartPreviousClose;
+
+                    const change = price - prevClose;
+                    const changePercent = (change / prevClose) * 100;
+
+                    // UI Güncelleme
+                    const el = document.getElementById(elementId);
+                    if (el) {
+                        const colorClass = change >= 0 ? 'c-green' : 'c-red';
+                        const sign = change >= 0 ? '+' : '';
+                        el.innerHTML = `
+                        <div style="text-align:right;">
+                            <div style="font-size:1.1rem; font-weight:bold;">${price.toFixed(2)} ₺</div>
+                            <div class="${colorClass}" style="font-size:0.85rem;">
+                                ${sign}${change.toFixed(2)} (${sign}${changePercent.toFixed(2)}%)
+                            </div>
                         </div>
-                    </div>
-                `;
-            }
-        } catch (error) {
-            console.error(`${symbol} fiyatı çekilemedi:`, error);
-            const el = document.getElementById(elementId);
-            if(el) el.innerHTML = '<span style="color:#666; font-size:0.8rem;">Veri yok</span>';
-        }
-    }
+                    `;
+                    }
+                    success = true;
+                    break; // Başarılı olduysa döngüden çık
 
-    // --- LİSTELEME (Manuel Portföy Kısmı) ---
-    function renderList() {
-        const listEl = document.getElementById('main-stock-list');
-        if (!listEl) return;
-        
-        listEl.innerHTML = '';
-        
-        stocks.forEach((stock, index) => {
-            const li = document.createElement('li');
-            li.className = 'status-neutral';
-            
-            // Benzersiz ID oluştur (Fiyat güncellemesi için)
-            const priceId = `price-${index}`;
-            
-            li.innerHTML = `
+                } catch (error) {
+                    console.warn(`Proxy hatası (${url}):`, error);
+                }
+            }
+
+            if (!success) {
+                console.error(`${symbol} fiyatı tüm proxylerden çekilemedi.`);
+                const el = document.getElementById(elementId);
+                if (el) el.innerHTML = '<span style="color:#666; font-size:0.8rem;">Veri yok (CORS)</span>';
+            }
+        }
+
+        // --- LİSTELEME (Manuel Portföy Kısmı) ---
+        function renderList() {
+            const listEl = document.getElementById('main-stock-list');
+            if (!listEl) return;
+
+            listEl.innerHTML = '';
+
+            stocks.forEach((stock, index) => {
+                const li = document.createElement('li');
+                li.className = 'status-neutral';
+
+                // Benzersiz ID oluştur (Fiyat güncellemesi için)
+                const priceId = `price-${index}`;
+
+                li.innerHTML = `
                 <div style="display:flex; align-items:center; gap:10px;">
                     <button class="action-btn" onclick="removeStock(${index})"><i class="fas fa-trash"></i></button>
                     <strong>${stock.symbol}</strong>
@@ -384,68 +494,75 @@
                     <i class="fas fa-spinner fa-spin" style="font-size:0.8rem; color:#666;"></i>
                 </div>
             `;
-            listEl.appendChild(li);
-            
-            // Fiyatı çek (Asenkron)
-            fetchStockData(stock.symbol, priceId);
-        });
-        
-        const totalEl = document.getElementById('total-stocks');
-        if(totalEl) totalEl.innerText = stocks.length;
-    }
+                listEl.appendChild(li);
 
-    function updateStats(signalCount) {
-        const signalEl = document.getElementById('buy-signals');
-        if(signalEl) signalEl.innerText = signalCount;
-    }
+                // Fiyatı çek (Asenkron)
+                fetchStockData(stock.symbol, priceId);
+            });
 
-    // --- HİSSE EKLEME / ÇIKARMA ---
-    function addStock() {
-        const input = document.getElementById('stock-input');
-        if (!input) return;
-        
-        const symbol = input.value.trim().toUpperCase();
-        if (symbol && !stocks.find(s => s.symbol === symbol)) {
-            stocks.push({ symbol: symbol });
+            const totalEl = document.getElementById('total-stocks');
+            if (totalEl) totalEl.innerText = stocks.length;
+        }
+
+        function updateStats(signalCount) {
+            const signalEl = document.getElementById('buy-signals');
+            if (signalEl) signalEl.innerText = signalCount;
+        }
+
+        // --- HİSSE EKLEME / ÇIKARMA ---
+        function addStock() {
+            const input = document.getElementById('stock-input');
+            if (!input) return;
+
+            let symbol = input.value.trim().toUpperCase();
+
+            // Eğer .IS uzantısı yoksa otomatik ekle (BIST varsayımı)
+            if (symbol && !symbol.includes('.')) {
+                symbol += ".IS";
+            }
+
+            if (symbol && !stocks.find(s => s.symbol === symbol)) {
+                stocks.push({ symbol: symbol });
+                saveData();
+                renderList();
+                input.value = '';
+            } else {
+                alert("Hisse zaten ekli veya boş!");
+            }
+        }
+
+        function removeStock(index) {
+            stocks.splice(index, 1);
             saveData();
             renderList();
-            input.value = '';
-        } else {
-            alert("Hisse zaten ekli veya boş!");
         }
-    }
 
-    function removeStock(index) {
-        stocks.splice(index, 1);
-        saveData();
-        renderList();
-    }
-
-    function saveData() {
-        localStorage.setItem('myStocks', JSON.stringify(stocks));
-    }
-    
-    // Butona basınca verileri tekrar çekmesi için fonksiyonu bağlıyoruz
-    window.simulateScan = fetchSignals; 
-    
-    // 30 saniyede bir portföy fiyatlarını güncelle
-    setInterval(() => {
-        renderList();
-    }, 30000);
-
-    // --- SAAT FONKSİYONU ---
-    function startTime() {
-        const clockEl = document.getElementById('clock');
-        if (clockEl) {
-            const today = new Date();
-            let h = today.getHours();
-            let m = today.getMinutes();
-            m = m < 10 ? "0" + m : m;
-            clockEl.innerHTML = h + ":" + m;
+        function saveData() {
+            localStorage.setItem('myStocks', JSON.stringify(stocks));
         }
-        setTimeout(startTime, 1000);
-    }
-</script>
 
-    </body>
+        // Butona basınca verileri tekrar çekmesi için fonksiyonu bağlıyoruz
+        window.simulateScan = fetchSignals;
+
+        // 30 saniyede bir portföy fiyatlarını güncelle
+        setInterval(() => {
+            renderList();
+        }, 30000);
+
+        // --- SAAT FONKSİYONU ---
+        function startTime() {
+            const clockEl = document.getElementById('clock');
+            if (clockEl) {
+                const today = new Date();
+                let h = today.getHours();
+                let m = today.getMinutes();
+                m = m < 10 ? "0" + m : m;
+                clockEl.innerHTML = h + ":" + m;
+            }
+            setTimeout(startTime, 1000);
+        }
+    </script>
+
+</body>
+
 </html>
