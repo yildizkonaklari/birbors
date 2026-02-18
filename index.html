@@ -620,6 +620,73 @@
             }
         }
 
+        // --- LİSTELEME ---
+        function renderList() {
+            const listEl = document.getElementById('main-stock-list');
+            if (!listEl) return;
+
+            listEl.innerHTML = '';
+
+            if (portfolioItems.length === 0) {
+                listEl.innerHTML = '<li style="text-align:center; color:#666;">Portföyünüz boş. <br> "İşlem Ekle" veya yukarıdan hisse ekleyerek başlayın.</li>';
+                return;
+            }
+
+            portfolioItems.forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = 'status-neutral';
+
+                // Benzersiz ID oluştur
+                const priceId = `price-p-${index}-${item.symbol}`;
+
+                // Kar/Zarar Renklendirme (Sadece işlem varsa anlamlı)
+                let plHtml = '';
+                if (!item.is_simple_watch) {
+                    const plClass = item.pl >= 0 ? 'c-green' : 'c-red';
+                    const sign = item.pl >= 0 ? '+' : '';
+                    plHtml = `<div class="${plClass}" style="font-size:0.8rem;">${sign}${item.pl_percent}%</div>`;
+                } else {
+                    plHtml = `<div style="font-size:0.8rem; color:#888;">İzleme Listesi</div>`;
+                }
+
+                const qtyDisplay = item.quantity > 0 ? `x${item.quantity}` : '';
+
+                li.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:5px; width:100%;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <button class="action-btn" onClick="removeStock('${item.symbol}')"><i class="fas fa-trash"></i></button>
+                            <strong>${item.symbol}</strong>
+                            <span style="font-size:0.8rem; color:#888;">${qtyDisplay}</span>
+                        </div>
+                        <div id="${priceId}" style="text-align:right;">
+                            <div style="font-weight:bold;">${item.current_price ? item.current_price + ' ₺' : '<i class="fas fa-spinner fa-spin"></i>'}</div>
+                            ${plHtml}
+                        </div>
+                    </div>
+                    
+                    <div style="display:flex; gap:10px; margin-top:5px;">
+                        <button onclick="openTransactionModal('${item.symbol}')" style="flex:1; background:#444; border:none; color:white; padding:4px; border-radius:4px; font-size:0.75rem; cursor:pointer;">
+                            <i class="fas fa-plus-minus"></i> İşlem Ekle
+                        </button>
+                        <button onclick="analyzeStock('${item.symbol}')" style="flex:1; background:none; border:1px solid var(--accent-blue); color:var(--accent-blue); border-radius:4px; padding:4px; cursor:pointer; font-size:0.75rem;">
+                            <i class="fas fa-magic"></i> AI Analiz
+                        </button>
+                    </div>
+                    
+                    ${!item.is_simple_watch ? `<div style="font-size:0.75rem; color:#666; margin-top:2px;">Ort. Maliyet: ${item.avg_cost} ₺</div>` : ''}
+                </div>
+            `;
+                listEl.appendChild(li);
+
+                // Fiyatı Asenkron Çek (Eğer sunucudan gelmediyse veya canlı güncelleme için)
+                fetchStockData(item.symbol, priceId, item);
+            });
+
+            const totalEl = document.getElementById('total-stocks');
+            if (totalEl) totalEl.innerText = portfolioItems.length;
+        }
+
         // --- TRANSACTION LOGIC (Global Scope) ---
         function openTransactionModal(symbol) {
             const el = document.getElementById('trans-symbol');
