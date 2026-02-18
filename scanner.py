@@ -173,7 +173,8 @@ def analiz_et(symbol):
         # KARAR (Canlı Mod: RSI < 35)
         # Strateji: RSI < 35 olduğunda 'AL' sinyali ver.
         # İsteğe bağlı olarak 'trend_up' ve 'on_support' eklenebilir.
-        if oversold:
+        if oversold: 
+            # Hedefler
             stop_loss = low_h * 0.95
             tp1 = close_p * 1.05
             tp2 = close_p * 1.10
@@ -188,7 +189,7 @@ def analiz_et(symbol):
                 "stop_loss": round(stop_loss, 2),
                 "target_1": round(tp1, 2),
                 "target_2": round(tp2, 2),
-                "note": "RSI < 35 SINYALI"
+                "note": "RSI < 35 (Aşırı Satım) Sinyali"
             }
             
     except Exception as e:

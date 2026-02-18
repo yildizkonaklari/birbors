@@ -55,8 +55,9 @@ Telegram bildirimleri ve Veritabanı kaydı için aşağıdaki ortam değişkenl
 -   `CHAT_ID`: Telegram Kanal/Grup ID
 -   `SUPABASE_URL`: Supabase Proje URL
 -   `SUPABASE_KEY`: Supabase API Key
+-   `OPENAI_API_KEY`: OpenAI API Key (Yapay zeka analizi için gereklidir)
 
-Eğer bu değişkenler ayarlanmazsa, script sadece konsola çıktı verir (Dry Run modu).
+Eğer bu değişkenler ayarlanmazsa, script sadece konsola çıktı verir veya bazı özellikler devre dışı kalır.
 
 ## Lisans 📄
 Bu proje açık kaynaklıdır ve eğitim amaçlıdır. Yatırım tavsiyesi değildir.

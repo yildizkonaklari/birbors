@@ -6,6 +6,10 @@ from urllib.parse import urlparse, parse_qs
 import requests
 import warnings
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
 
 # --- ANTIBLOCK FIX ---
 session = requests.Session()
@@ -72,6 +76,59 @@ class MyHandler(http.server.SimpleHTTPRequestHandler):
                     
             except Exception as e:
                 self.send_error(500, str(e))
+
+        elif parsed_path.path.startswith("/api/analyze/"):
+            try:
+                # Sembolü url'den al
+                symbol = parsed_path.path.split("/")[-1]
+                
+                api_key = os.environ.get("OPENAI_API_KEY")
+                if not api_key or not OpenAI:
+                    self.send_error(500, "OpenAI API Key eksik veya kütüphane yüklü değil.")
+                    return
+
+                # Basit veri çekimi
+                ticker = yf.Ticker(symbol)
+                info = ticker.fast_info
+                
+                # Prompt hazırlığı
+                prompt = f"""
+                Sen uzman bir borsa analistisin. Aşağıdaki verileri kullanarak {symbol} hissesi için 
+                kısa, etkileyici ve yatırımcıya yön gösteren Türkçe bir analiz yaz. 
+                Yatırım tavsiyesi olmadığını belirten standart bir uyarı ekle ama metni boğma.
+                
+                Veriler:
+                - Fiyat: {info.last_price}
+                - Önceki Kapanış: {info.previous_close}
+                - Piyasa Değeri: {info.market_cap}
+                - 52 Hafta En Yüksek: {info.year_high}
+                - 52 Hafta En Düşük: {info.year_low}
+                
+                Analiz (Max 3 cümle):
+                """
+                
+                client = OpenAI(api_key=api_key)
+                completion = client.chat.completions.create(
+                    model="gpt-3.5-turbo",
+                    messages=[
+                        {"role": "system", "content": "Sen yardımcı bir finans asistanısın."},
+                        {"role": "user", "content": prompt}
+                    ]
+                )
+                
+                analysis_text = completion.choices[0].message.content
+                
+                response_data = {"symbol": symbol, "analysis": analysis_text}
+                
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json; charset=utf-8')
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(json.dumps(response_data, ensure_ascii=False).encode('utf-8'))
+                
+            except Exception as e:
+                 self.send_error(500, f"AI Hatası: {str(e)}")
+
         else:
             # Standart dosya sunumu (index.html vb.)
             super().do_GET()
