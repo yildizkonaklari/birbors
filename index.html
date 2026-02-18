@@ -1,0 +1,129 @@
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+    // --- AYARLAR (BURAYI DOLDUR) ---
+    const SUPABASE_URL = "BURAYA_SUPABASE_URL_YAPISTIR";
+    const SUPABASE_KEY = "BURAYA_ANON_PUBLIC_KEY_YAPISTIR";
+    
+    // Bağlantıyı Kur
+    const supabase = supa.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // --- VERİ YÖNETİMİ ---
+    let stocks = JSON.parse(localStorage.getItem('myStocks')) || [];
+
+    // --- BAŞLANGIÇ ---
+    function init() {
+        renderList(); // Kayıtlı hisseleri göster
+        fetchSignals(); // Veritabanından sinyalleri çek
+        startTime();
+    }
+
+    // --- VERİTABANINDAN OKUMA ---
+    async function fetchSignals() {
+        const btn = document.querySelector('.btn-scan');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Yükleniyor...';
+        
+        // Supabase'den son 10 sinyali çek
+        const { data, error } = await supabase
+            .from('signals')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        if (error) {
+            console.error("Veri çekme hatası:", error);
+            btn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Hata';
+            return;
+        }
+
+        // Sinyal Listesini Güncelle
+        const signalListEl = document.getElementById('signal-list');
+        signalListEl.innerHTML = '';
+
+        if (data && data.length > 0) {
+            data.forEach(signal => {
+                const li = document.createElement('li');
+                li.className = 'status-buy'; // Hepsi AL sinyali
+                
+                // Tarihi formatla
+                const date = new Date(signal.created_at).toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'});
+
+                li.innerHTML = `
+                    <div style="display:flex; flex-direction:column;">
+                        <strong>${signal.symbol}</strong>
+                        <span style="font-size:0.75rem; color:#ccc;">${date}</span>
+                    </div>
+                    <div style="text-align:right;">
+                        <span class="badge badge-buy">${signal.price} TL</span>
+                        <div style="font-size:0.7rem; color:#888;">RSI: ${signal.rsi}</div>
+                    </div>
+                `;
+                signalListEl.appendChild(li);
+            });
+        } else {
+            signalListEl.innerHTML = '<li style="text-align:center; color:#555;">Henüz sinyal yok.</li>';
+        }
+
+        btn.innerHTML = '<i class="fas fa-sync"></i> YENİLE';
+        updateStats(data ? data.length : 0);
+    }
+
+    // --- LİSTELEME (Manuel Takip Kısmı) ---
+    function renderList() {
+        const listEl = document.getElementById('main-stock-list');
+        listEl.innerHTML = '';
+        
+        stocks.forEach((stock, index) => {
+            const li = document.createElement('li');
+            li.className = 'status-neutral';
+            li.innerHTML = `
+                <strong>${stock.symbol}</strong>
+                <button class="action-btn" onclick="removeStock(${index})"><i class="fas fa-trash"></i></button>
+            `;
+            listEl.appendChild(li);
+        });
+        
+        document.getElementById('total-stocks').innerText = stocks.length;
+    }
+
+    function updateStats(signalCount) {
+        document.getElementById('buy-signals').innerText = signalCount;
+    }
+
+    // --- DİĞER FONKSİYONLAR ---
+    function addStock() {
+        const input = document.getElementById('stock-input');
+        const symbol = input.value.trim().toUpperCase();
+        if (symbol && !stocks.find(s => s.symbol === symbol)) {
+            stocks.push({ symbol: symbol });
+            saveData();
+            renderList();
+            input.value = '';
+        }
+    }
+
+    function removeStock(index) {
+        stocks.splice(index, 1);
+        saveData();
+        renderList();
+    }
+
+    function saveData() {
+        localStorage.setItem('myStocks', JSON.stringify(stocks));
+    }
+    
+    // Butona basınca verileri tekrar çek
+    window.simulateScan = fetchSignals; 
+
+    // Saat
+    function startTime() {
+        const today = new Date();
+        let h = today.getHours();
+        let m = today.getMinutes();
+        m = m < 10 ? "0" + m : m;
+        document.getElementById('clock').innerHTML = h + ":" + m;
+        setTimeout(startTime, 1000);
+    }
+
+    init();
+</script>
