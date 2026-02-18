@@ -616,42 +616,114 @@
             }
         }
 
-        // --- LİSTELEME (Manuel Portföy Kısmı) ---
+        // --- LİSTELEME ---
         function renderList() {
             const listEl = document.getElementById('main-stock-list');
             if (!listEl) return;
 
             listEl.innerHTML = '';
 
-            stocks.forEach((stock, index) => {
+            if (portfolioItems.length === 0) {
+                listEl.innerHTML = '<li style="text-align:center; color:#666;">Portföyünüz boş. <br> "İşlem Ekle" veya yukarıdan hisse ekleyerek başlayın.</li>';
+                return;
+            }
+
+            portfolioItems.forEach((item, index) => {
                 const li = document.createElement('li');
                 li.className = 'status-neutral';
 
-                // Benzersiz ID oluştur (Fiyat güncellemesi için)
-                const priceId = `price-${index}`;
+                // Benzersiz ID oluştur
+                const priceId = `price-p-${index}-${item.symbol}`;
+
+                // Kar/Zarar Renklendirme (Sadece işlem varsa anlamlı)
+                let plHtml = '';
+                if (!item.is_simple_watch) {
+                    const plClass = item.pl >= 0 ? 'c-green' : 'c-red';
+                    const sign = item.pl >= 0 ? '+' : '';
+                    plHtml = `<div class="${plClass}" style="font-size:0.8rem;">${sign}${item.pl_percent}%</div>`;
+                } else {
+                    plHtml = `<div style="font-size:0.8rem; color:#888;">İzleme Listesi</div>`;
+                }
+
+                const qtyDisplay = item.quantity > 0 ? `x${item.quantity}` : '';
 
                 li.innerHTML = `
-                <div style="display:flex; flex-direction:column; gap:5px;">
-                    <div style="display:flex; align-items:center; gap:10px;">
-                        <button class="action-btn" onclick="removeStock(${index})"><i class="fas fa-trash"></i></button>
-                        <strong>${stock.symbol}</strong>
+                <div style="display:flex; flex-direction:column; gap:5px; width:100%;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <button class="action-btn" onClick="removeStock('${item.symbol}')"><i class="fas fa-trash"></i></button>
+                            <strong>${item.symbol}</strong>
+                            <span style="font-size:0.8rem; color:#888;">${qtyDisplay}</span>
+                        </div>
+                        <div id="${priceId}" style="text-align:right;">
+                            <div style="font-weight:bold;">${item.current_price ? item.current_price + ' ₺' : '<i class="fas fa-spinner fa-spin"></i>'}</div>
+                            ${plHtml}
+                        </div>
                     </div>
-                    <button onclick="analyzeStock('${stock.symbol}')" style="background:none; border:1px solid var(--accent-blue); color:var(--accent-blue); border-radius:4px; padding:4px 8px; cursor:pointer; font-size:0.7rem;">
-                        <i class="fas fa-magic"></i> AI Analiz
-                    </button>
-                </div>
-                <div id="${priceId}">
-                    <i class="fas fa-spinner fa-spin" style="font-size:0.8rem; color:#666;"></i>
+                    
+                    <div style="display:flex; gap:10px; margin-top:5px;">
+                        <button onclick="openTransactionModal('${item.symbol}')" style="flex:1; background:#444; border:none; color:white; padding:4px; border-radius:4px; font-size:0.75rem; cursor:pointer;">
+                            <i class="fas fa-plus-minus"></i> İşlem Ekle
+                        </button>
+                        <button onclick="analyzeStock('${item.symbol}')" style="flex:1; background:none; border:1px solid var(--accent-blue); color:var(--accent-blue); border-radius:4px; padding:4px; cursor:pointer; font-size:0.75rem;">
+                            <i class="fas fa-magic"></i> AI Analiz
+                        </button>
+                    </div>
+                    
+                    ${!item.is_simple_watch ? `<div style="font-size:0.75rem; color:#666; margin-top:2px;">Ort. Maliyet: ${item.avg_cost} ₺</div>` : ''}
                 </div>
             `;
                 listEl.appendChild(li);
 
-                // Fiyatı çek (Asenkron)
-                fetchStockData(stock.symbol, priceId);
+                // Fiyatı Asenkron Çek (Eğer sunucudan gelmediyse veya canlı güncelleme için)
+                fetchStockData(item.symbol, priceId, item);
             });
 
             const totalEl = document.getElementById('total-stocks');
-            if (totalEl) totalEl.innerText = stocks.length;
+            if (totalEl) totalEl.innerText = portfolioItems.length;
+        }
+
+        // --- FİYAT GÜNCELLEME (Frontend Taraflı) ---
+        async function fetchStockData(symbol, elementId, itemContext) {
+            try {
+                const response = await fetch(`/api/quote/${symbol}`);
+                if (!response.ok) return; // Sessizce geç
+
+                const data = await response.json();
+                const price = data.price;
+                const prevClose = data.prev_close;
+
+                if (price !== undefined) {
+                    const el = document.getElementById(elementId);
+                    if (el) {
+                        // K/Z Hesabı (Canlı Fiyat ile)
+                        let subInfo = '';
+                        if (!itemContext.is_simple_watch && itemContext.quantity > 0) {
+                            const marketVal = price * itemContext.quantity;
+                            const pl = marketVal - itemContext.total_cost;
+                            const plPercent = (pl / itemContext.total_cost) * 100;
+
+                            const plClass = pl >= 0 ? 'c-green' : 'c-red';
+                            const sign = pl >= 0 ? '+' : '';
+                            subInfo = `<div class="${plClass}" style="font-size:0.8rem;">${sign}${plPercent.toFixed(2)}%</div>`;
+                        } else if (prevClose) {
+                            // Sadece günlük değişim
+                            const change = price - prevClose;
+                            const changePercent = (change / prevClose) * 100;
+                            const colorClass = change >= 0 ? 'c-green' : 'c-red';
+                            const sign = change >= 0 ? '+' : '';
+                            subInfo = `<div class="${colorClass}" style="font-size:0.8rem;">${sign}${changePercent.toFixed(2)}%</div>`;
+                        }
+
+                        el.innerHTML = `
+                             <div style="font-weight:bold;">${price.toFixed(2)} ₺</div>
+                             ${subInfo}
+                        `;
+                    }
+                }
+            } catch (e) {
+                console.error(e);
+            }
         }
 
         function updateStats(signalCount) {
@@ -693,23 +765,41 @@
             }
         }
 
-        async function removeStock(index) {
-            const stock = stocks[index];
-            if (!stock) return;
+        async function removeStock(symbol) {
+            // Hangi tablodan sileceğimize karar verelim
+            const item = portfolioItems.find(i => i.symbol === symbol);
+            if (!item) return;
 
-            const btn = document.querySelectorAll('.action-btn')[index];
-            if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            // Find the button associated with this symbol to update its state
+            // This assumes the button has a unique identifier or can be found relative to the symbol
+            // For simplicity, we'll just update the specific button that triggered the action.
+            // In renderList, the button is `onClick="removeStock('${item.symbol}')"`.
+            // We can't easily get a reference to *that specific button* here without more DOM context.
+            // For now, we'll skip the spinner on the button itself, or assume the whole list re-renders quickly.
 
-            const { error } = await supabaseClient
-                .from('portfolio')
-                .delete()
-                .eq('symbol', stock.symbol);
+            if (item.is_simple_watch) {
+                // Sadece izleme listesinden sil (Portfolio tablosu)
+                if (!confirm(symbol + " izleme listesinden silinecek. Emin misin?")) return;
 
-            if (error) {
-                alert("Silme hatası: " + error.message);
-                if (btn) btn.innerHTML = '<i class="fas fa-trash"></i>';
+                const { error } = await supabaseClient
+                    .from('portfolio')
+                    .delete()
+                    .eq('symbol', symbol);
+
+                if (error) alert("Hata: " + error.message);
+                else fetchPortfolio();
+
             } else {
-                fetchPortfolio(); // Listeyi yenile
+                // İşlem geçmişi var, transactions tablosundan sil
+                if (!confirm(symbol + " hissesine ait TÜM İŞLEM GEÇMİŞİ ve portföy kaydı silinecek. Emin misin?")) return;
+
+                const { error } = await supabaseClient
+                    .from('transactions')
+                    .delete()
+                    .eq('symbol', symbol);
+
+                if (error) alert("Hata: " + error.message);
+                else fetchPortfolio();
             }
         }
 
