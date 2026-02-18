@@ -616,113 +616,62 @@
             }
         }
 
-        // --- LİSTELEME ---
-        function renderList() {
-            const listEl = document.getElementById('main-stock-list');
-            if (!listEl) return;
+        // --- TRANSACTION LOGIC (Global Scope) ---
+        function openTransactionModal(symbol) {
+            const el = document.getElementById('trans-symbol');
+            if (el) el.innerText = symbol;
 
-            listEl.innerHTML = '';
+            const modal = document.getElementById('transaction-modal');
+            if (modal) modal.style.display = 'flex';
+        }
 
-            if (portfolioItems.length === 0) {
-                listEl.innerHTML = '<li style="text-align:center; color:#666;">Portföyünüz boş. <br> "İşlem Ekle" veya yukarıdan hisse ekleyerek başlayın.</li>';
+        function closeTransactionModal() {
+            const modal = document.getElementById('transaction-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        async function saveTransaction() {
+            const symbolEl = document.getElementById('trans-symbol');
+            const symbol = symbolEl ? symbolEl.innerText : null;
+
+            const typeEl = document.getElementById('trans-type');
+            const type = typeEl ? typeEl.value : 'BUY';
+
+            const amountEl = document.getElementById('trans-amount');
+            const amount = amountEl ? amountEl.value : 0;
+
+            const priceEl = document.getElementById('trans-price');
+            const price = priceEl ? priceEl.value : 0;
+
+            if (!symbol || !amount || !price) {
+                alert("Lütfen adet ve fiyat giriniz.");
                 return;
             }
 
-            portfolioItems.forEach((item, index) => {
-                const li = document.createElement('li');
-                li.className = 'status-neutral';
+            const btn = document.querySelector('#transaction-modal button[onclick="saveTransaction()"]');
+            const originalText = btn ? btn.innerText : 'KAYDET';
+            if (btn) btn.innerText = "Kaydediliyor...";
 
-                // Benzersiz ID oluştur
-                const priceId = `price-p-${index}-${item.symbol}`;
-
-                // Kar/Zarar Renklendirme (Sadece işlem varsa anlamlı)
-                let plHtml = '';
-                if (!item.is_simple_watch) {
-                    const plClass = item.pl >= 0 ? 'c-green' : 'c-red';
-                    const sign = item.pl >= 0 ? '+' : '';
-                    plHtml = `<div class="${plClass}" style="font-size:0.8rem;">${sign}${item.pl_percent}%</div>`;
-                } else {
-                    plHtml = `<div style="font-size:0.8rem; color:#888;">İzleme Listesi</div>`;
-                }
-
-                const qtyDisplay = item.quantity > 0 ? `x${item.quantity}` : '';
-
-                li.innerHTML = `
-                <div style="display:flex; flex-direction:column; gap:5px; width:100%;">
-                    <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <button class="action-btn" onClick="removeStock('${item.symbol}')"><i class="fas fa-trash"></i></button>
-                            <strong>${item.symbol}</strong>
-                            <span style="font-size:0.8rem; color:#888;">${qtyDisplay}</span>
-                        </div>
-                        <div id="${priceId}" style="text-align:right;">
-                            <div style="font-weight:bold;">${item.current_price ? item.current_price + ' ₺' : '<i class="fas fa-spinner fa-spin"></i>'}</div>
-                            ${plHtml}
-                        </div>
-                    </div>
-                    
-                    <div style="display:flex; gap:10px; margin-top:5px;">
-                        <button onclick="openTransactionModal('${item.symbol}')" style="flex:1; background:#444; border:none; color:white; padding:4px; border-radius:4px; font-size:0.75rem; cursor:pointer;">
-                            <i class="fas fa-plus-minus"></i> İşlem Ekle
-                        </button>
-                        <button onclick="analyzeStock('${item.symbol}')" style="flex:1; background:none; border:1px solid var(--accent-blue); color:var(--accent-blue); border-radius:4px; padding:4px; cursor:pointer; font-size:0.75rem;">
-                            <i class="fas fa-magic"></i> AI Analiz
-                        </button>
-                    </div>
-                    
-                    ${!item.is_simple_watch ? `<div style="font-size:0.75rem; color:#666; margin-top:2px;">Ort. Maliyet: ${item.avg_cost} ₺</div>` : ''}
-                </div>
-            `;
-                listEl.appendChild(li);
-
-                // Fiyatı Asenkron Çek (Eğer sunucudan gelmediyse veya canlı güncelleme için)
-                fetchStockData(item.symbol, priceId, item);
-            });
-
-            const totalEl = document.getElementById('total-stocks');
-            if (totalEl) totalEl.innerText = portfolioItems.length;
-        }
-
-        // --- FİYAT GÜNCELLEME (Frontend Taraflı) ---
-        async function fetchStockData(symbol, elementId, itemContext) {
             try {
-                const response = await fetch(`/api/quote/${symbol}`);
-                if (!response.ok) return; // Sessizce geç
+                const { error } = await supabaseClient
+                    .from('transactions')
+                    .insert({
+                        symbol: symbol,
+                        type: type,
+                        amount: parseInt(amount),
+                        price: parseFloat(price)
+                    });
 
-                const data = await response.json();
-                const price = data.price;
-                const prevClose = data.prev_close;
+                if (error) throw error;
 
-                if (price !== undefined) {
-                    const el = document.getElementById(elementId);
-                    if (el) {
-                        // K/Z Hesabı (Canlı Fiyat ile)
-                        let subInfo = '';
-                        if (!itemContext.is_simple_watch && itemContext.quantity > 0) {
-                            const marketVal = price * itemContext.quantity;
-                            const pl = marketVal - itemContext.total_cost;
-                            const plPercent = (pl / itemContext.total_cost) * 100;
+                closeTransactionModal();
+                fetchPortfolio();
 
-                            const plClass = pl >= 0 ? 'c-green' : 'c-red';
-                            const sign = pl >= 0 ? '+' : '';
-                            subInfo = `<div class="${plClass}" style="font-size:0.8rem;">${sign}${plPercent.toFixed(2)}%</div>`;
-                        } else if (prevClose) {
-                            // Sadece günlük değişim
-                            const change = price - prevClose;
-                            const changePercent = (change / prevClose) * 100;
-                            const colorClass = change >= 0 ? 'c-green' : 'c-red';
-                            const sign = change >= 0 ? '+' : '';
-                            subInfo = `<div class="${colorClass}" style="font-size:0.8rem;">${sign}${changePercent.toFixed(2)}%</div>`;
-                        }
-
-                        el.innerHTML = `
-                             <div style="font-weight:bold;">${price.toFixed(2)} ₺</div>
-                             ${subInfo}
-                        `;
-                    }
-                }
-            } catch (e) {
-                console.error(e);
+            } catch (error) {
+                alert("Hata: " + error.message);
+                console.error(error);
+            } finally {
+                if (btn) btn.innerText = "KAYDET";
             }
         }
 
