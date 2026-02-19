@@ -816,9 +816,36 @@
 
             if (!symbol) return;
 
-            // Doğrudan işlem modalını aç
-            openTransactionModal(symbol);
-            input.value = '';
+            const btn = document.querySelector('.btn-add');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+
+            try {
+                // Check duplicate check (optional but good UX)
+                if (portfolioItems.find(i => i.symbol === symbol)) {
+                    alert("Bu hisse zaten listenizde ekli.");
+                    input.value = '';
+                    return;
+                }
+
+                // Sadece izleme listesine (portfolio tablosuna) ekle
+                const { error } = await supabaseClient
+                    .from('portfolio')
+                    .insert([{ symbol: symbol }]);
+
+                if (error) throw error;
+
+                await fetchPortfolio();
+                input.value = '';
+
+            } catch (err) {
+                console.error(err);
+                alert("Hata: " + err.message);
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
         }
 
         async function removeStock(symbol) {
