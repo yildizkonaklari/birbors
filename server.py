@@ -44,12 +44,49 @@ PORT = int(os.environ.get("PORT", 8000))
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://ckgwpxsaclakcdzitzrb.supabase.co")
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrZ3dweHNhY2xha2Nkeml0enJiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNjAzMjQsImV4cCI6MjA4NjkzNjMyNH0.Hl02XgwwHOWyYrI0fcH7OH19IwTSFX4z5Zhjlc8rvQY")
 
+# --- AUTO PILOT INIT ---
+from autopilot import AutoPilot
+autopilot_system = AutoPilot()
+
 class MyHandler(http.server.SimpleHTTPRequestHandler):
+    def do_POST(self):
+        parsed_path = urlparse(self.path)
+        
+        if parsed_path.path == "/api/autopilot/toggle":
+            try:
+                length = int(self.headers.get('content-length', 0))
+                body = self.rfile.read(length).decode('utf-8')
+                data = json.loads(body) # Expect {"state": true/false}
+                
+                new_state = autopilot_system.toggle(data.get("state", False))
+                
+                self.send_response(200)
+                self.send_header('Content-type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({"active": new_state}).encode('utf-8'))
+            except Exception as e:
+                 self.send_error(500, str(e))
+
+        elif parsed_path.path == "/api/autopilot/reset":
+            autopilot_system.reset()
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(b"RESET OK")
+
     def do_GET(self):
         parsed_path = urlparse(self.path)
         
+        # --- AUTO PILOT API ---
+        if parsed_path.path == "/api/autopilot/status":
+             status = autopilot_system.get_status()
+             self.send_response(200)
+             self.send_header('Content-type', 'application/json')
+             self.send_header('Access-Control-Allow-Origin', '*')
+             self.end_headers()
+             self.wfile.write(json.dumps(status, ensure_ascii=False).encode('utf-8'))
+
         # API Endpoint: /api/quote/<SYMBOL>
-        if parsed_path.path.startswith("/api/quote/"):
+        elif parsed_path.path.startswith("/api/quote/"):
             try:
                 # Sembolü url'den al
                 symbol = parsed_path.path.split("/")[-1]
@@ -277,7 +314,51 @@ if __name__ == "__main__":
         while True:
             try:
                 print("\n[Scheduler] Otomatik tarama başlatılıyor...", flush=True)
-                scanner.main()
+                
+                # Sinyalleri scanner'dan al
+                # Scanner.main() yerine, scanner logic'ini alıp sonuç döndürmeli
+                # Scanner modulunde minor degisiklik gerekebilir ama simdilik
+                # scanner.py'nin kendi icindeki save_to_db fonksiyonuna mudahale etmeden
+                # Sinyal listesini döndüren bir versiyon yazmadık.
+                # PRATİK ÇÖZÜM: Scanner'ı modifiye etmeden, scanner.py 'main'i sinyalleri
+                # bir global listeye atacak şekilde de kullanabiliriz ama en temizi wrapper.
+                
+                # --- AUTO PILOT INTEGRASYONU ---
+                # Scanner çalışır, veritabanına yazar.
+                # Biz ayrıca autopilot için özel bir tarama çalıştıralım (aynı logic)
+                # VEYA scanner.py'ye sonuc döndürme yeteneği ekleyelim.
+                # Şimdilik scanner.py'yi import edip iç fonksiyonu kullanalım:
+                
+                found_signals = []
+                for sembol in scanner.SEMBOLLER:
+                     res = scanner.analiz_et(sembol)
+                     if res: found_signals.append(res)
+                     time.sleep(0.5) # Server yükünü azalt
+                
+                if found_signals:
+                    print(f"[AutoPilot] {len(found_signals)} sinyal bulundu, işleniyor...")
+                    autopilot_system.process_signals(found_signals)
+                else:
+                    # Ayrıca Stop-Loss kontrolü yap (Sinyal olmasa bile fiyat kontrolü lazım)
+                    # Bunun için hisselerin güncel fiyatlarını çekmek lazım
+                    # AutoPilot içinde check_stops fonksiyonu var ama fiyatları dışardan bekliyor.
+                    # Basitlik adına: Sadece tarama döngüsünde stop kontrolü yapalım.
+                    pass
+                
+                # Mevcut portföydeki hisselerin güncel fiyatlarını alıp stop kontrolü yap
+                status = autopilot_system.get_status()
+                holdings = status.get("holdings", {})
+                current_prices = {}
+                for sym in holdings.keys():
+                    try:
+                        ticker = yf.Ticker(sym)
+                        p = ticker.fast_info.last_price
+                        if p: current_prices[sym] = p
+                    except: pass
+                
+                if current_prices:
+                    autopilot_system.check_stops(current_prices)
+
                 print("[Scheduler] Tarama tamamlandı. 15 dakika bekleniyor...", flush=True)
             except Exception as e:
                 print(f"[Scheduler] Hata: {e}", flush=True)

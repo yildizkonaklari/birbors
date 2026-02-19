@@ -275,6 +275,108 @@
             background-color: #444;
             color: #ccc;
         }
+
+        /* Auto Pilot Styles */
+        .autopilot-section {
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .autopilot-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: #2196F3;
+        }
+
+        input:focus+.slider {
+            box-shadow: 0 0 1px #2196F3;
+        }
+
+        input:checked+.slider:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+
+        /* Log Table */
+        .log-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .log-table th,
+        .log-table td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #333;
+        }
+
+        .log-table th {
+            color: #888;
+            font-weight: 600;
+        }
+
+        .log-table tr:hover {
+            background-color: #252525;
+        }
+
+        .ap-card {
+            background: #252525;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            flex: 1;
+        }
     </style>
 </head>
 
@@ -287,6 +389,64 @@
                 <i class="fas fa-clock"></i> <span id="clock">00:00</span>
             </div>
         </header>
+
+        <!-- AUTO PILOT SECTION -->
+        <div class="autopilot-section">
+            <div class="autopilot-header">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <i class="fas fa-robot fa-lg" style="color:var(--accent-blue);"></i>
+                    <h2 style="margin:0; font-size:1.3rem;">Otomatik Pilot</h2>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span id="ap-status-text" style="color:#888; font-size:0.9rem;">DEVRE DIŞI</span>
+                    <label class="switch">
+                        <input type="checkbox" id="autopilot-toggle" onchange="toggleAutoPilot()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- AP Stats -->
+            <div style="display:flex; gap:15px; flex-wrap:wrap; margin-bottom:20px;">
+                <div class="ap-card">
+                    <div style="color:#888; font-size:0.8rem;">Toplam Varlık</div>
+                    <div id="ap-total-value" style="font-size:1.4rem; font-weight:bold; color:white;">100,000.00 ₺</div>
+                </div>
+                <div class="ap-card">
+                    <div style="color:#888; font-size:0.8rem;">Nakit (Kasa)</div>
+                    <div id="ap-cash" style="font-size:1.2rem; font-weight:bold; color:var(--accent-green);">100,000.00
+                        ₺</div>
+                </div>
+                <div class="ap-card">
+                    <div style="color:#888; font-size:0.8rem;">Hisse Değeri</div>
+                    <div id="ap-stock-value" style="font-size:1.2rem; font-weight:bold; color:var(--accent-blue);">0.00
+                        ₺</div>
+                </div>
+            </div>
+
+            <!-- AP Logs -->
+            <h3 style="font-size:1rem; color:#aaa; margin-bottom:10px;">Günlük İşlemler</h3>
+            <div style="max-height: 250px; overflow-y: auto; background:#222; border-radius:8px;">
+                <table class="log-table">
+                    <thead>
+                        <tr>
+                            <th>Saat</th>
+                            <th>İşlem</th>
+                            <th>Sembol</th>
+                            <th>Fiyat</th>
+                            <th>Adet</th>
+                            <th>Tutar</th>
+                            <th>Not</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ap-log-body">
+                        <tr>
+                            <td colspan="7" style="text-align:center; color:#555;">İşlem yok.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
         <div class="stats-grid">
             <div class="card">
@@ -451,6 +611,88 @@
 
         // --- VERİ YÖNETİMİ (Portföy için) ---
         let stocks = [];
+
+        // --- AUTO PILOT FONKSİYONLARI ---
+        let apInterval = null;
+
+        async function fetchAutoPilotStatus() {
+            try {
+                const res = await fetch('/api/autopilot/status');
+                if (!res.ok) return;
+                const data = await res.json();
+
+                // Update UI
+                const toggle = document.getElementById('autopilot-toggle');
+                const statusText = document.getElementById('ap-status-text');
+
+                // Toggle state (sadece ilk seferde veya dışardan değiştiyse, kullanıcı etkileşimi sırasında çakışmasın)
+                toggle.checked = data.active;
+                statusText.innerText = data.active ? "AKTİF" : "DEVRE DIŞI";
+                statusText.style.color = data.active ? "var(--accent-green)" : "#888";
+
+                // Stats
+                document.getElementById('ap-total-value').innerText = data.total_value.toFixed(2) + " ₺";
+                document.getElementById('ap-cash').innerText = data.cash.toFixed(2) + " ₺";
+                const stockVal = data.total_value - data.cash;
+                document.getElementById('ap-stock-value').innerText = stockVal.toFixed(2) + " ₺";
+
+                // Logs
+                renderLogs(data.logs);
+
+            } catch (e) {
+                console.error("AP Status Error:", e);
+            }
+        }
+
+        async function toggleAutoPilot() {
+            const toggle = document.getElementById('autopilot-toggle');
+            const newState = toggle.checked;
+
+            try {
+                const res = await fetch('/api/autopilot/toggle', {
+                    method: 'POST',
+                    body: JSON.stringify({ state: newState }),
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+
+                // UI update from response
+                const statusText = document.getElementById('ap-status-text');
+                statusText.innerText = data.active ? "AKTİF" : "DEVRE DIŞI";
+                statusText.style.color = data.active ? "var(--accent-green)" : "#888";
+
+                fetchAutoPilotStatus(); // Refresh all stats
+            } catch (e) {
+                console.error("Toggle Error:", e);
+                toggle.checked = !newState; // Revert on error
+            }
+        }
+
+        function renderLogs(logs) {
+            const tbody = document.getElementById('ap-log-body');
+            tbody.innerHTML = '';
+
+            if (!logs || logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:#555;">İşlem yok.</td></tr>';
+                return;
+            }
+
+            logs.forEach(log => {
+                const tr = document.createElement('tr');
+                const color = log.action === 'ALIM' ? 'var(--accent-green)' : (log.action === 'SATIŞ' ? 'var(--accent-blue)' : 'var(--accent-red)');
+
+                tr.innerHTML = `
+                    <td style="color:#aaa;">${log.timestamp.split(' ')[1]}</td>
+                    <td style="color:${color}; font-weight:bold;">${log.action}</td>
+                    <td>${log.symbol}</td>
+                    <td>${log.price.toFixed(2)}</td>
+                    <td>${log.amount}</td>
+                    <td>${log.total.toFixed(2)}</td>
+                    <td style="color:#888; font-size:0.8rem;">${log.note}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
 
         // --- YAPAY ZEKA ANALİZİ ---
         async function analyzeStock(symbol) {
