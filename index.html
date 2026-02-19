@@ -730,7 +730,7 @@
         }
 
         // --- TRANSACTION LOGIC (Global Scope) ---
-        function openTransactionModal(symbol) {
+        async function openTransactionModal(symbol) {
             const el = document.getElementById('trans-symbol');
             if (el) el.innerText = symbol;
 
@@ -739,13 +739,32 @@
             if (amountEl) amountEl.value = '';
 
             const priceEl = document.getElementById('trans-price');
-            if (priceEl) priceEl.value = '';
+            // Reset price field and show loading indicator (placeholder)
+            if (priceEl) {
+                priceEl.value = '';
+                priceEl.placeholder = 'Fiyat yükleniyor...';
+            }
 
             const modal = document.getElementById('transaction-modal');
             if (modal) {
                 modal.style.display = 'flex';
                 // Animasyonlu giriş veya odaklanma
                 if (amountEl) setTimeout(() => amountEl.focus(), 100);
+            }
+
+            // Fetch current price
+            try {
+                const response = await fetch(`/api/quote/${symbol}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.price !== undefined && priceEl) {
+                        priceEl.value = data.price.toFixed(2);
+                    }
+                }
+            } catch (e) {
+                console.error("Fiyat çekme hatası:", e);
+            } finally {
+                if (priceEl && !priceEl.value) priceEl.placeholder = '0.00';
             }
         }
 
