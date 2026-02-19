@@ -642,7 +642,8 @@
 
         // --- FİYAT ÇEKME (Portföy İçin) ---
         // --- FİYAT ÇEKME (Portföy İçin) ---
-        async function fetchStockData(symbol, elementId) {
+        // --- FİYAT ÇEKME (Portföy İçin) ---
+        async function fetchStockData(symbol, elementId, item) {
             try {
                 // Yerel Sunucudan Çek (server.py)
                 const response = await fetch(`/api/quote/${symbol}`);
@@ -653,17 +654,44 @@
                 const price = data.price;
                 const prevClose = data.prev_close;
 
-                // Eğer veri geldiyse ve önceki kapanış varsa hesapla
-                if (price !== undefined && prevClose !== undefined) {
+                if (price === undefined) return;
+
+                const el = document.getElementById(elementId);
+                if (!el) return;
+
+                // --- PORTFÖY ÜRÜNÜ (Miktar Var) ---
+                if (item && item.quantity > 0) {
+                    const marketValue = price * item.quantity;
+                    const totalCost = item.avg_cost * item.quantity;
+                    const pl = marketValue - totalCost;
+                    const plPercent = totalCost > 0 ? (pl / totalCost) * 100 : 0;
+
+                    const colorClass = pl >= 0 ? 'c-green' : 'c-red';
+                    const sign = pl >= 0 ? '+' : '';
+
+                    el.innerHTML = `
+                        <div style="text-align:right;">
+                             <!-- Toplam Tutar (Market Value) -->
+                            <div style="font-size:1.1rem; font-weight:bold;">${marketValue.toFixed(2)} ₺</div>
+                            
+                            <!-- Birim Fiyat -->
+                            <div style="font-size:0.75rem; color:#888;">${price.toFixed(2)} ₺</div>
+
+                            <!-- Kar/Zarar -->
+                            <div class="${colorClass}" style="font-size:0.85rem; font-weight:bold;">
+                                ${sign}${pl.toFixed(2)} ₺ (${sign}${plPercent.toFixed(2)}%)
+                            </div>
+                        </div>
+                    `;
+                }
+                // --- TAKİP LİSTESİ (Günlük Değişim Göster) ---
+                else if (prevClose !== undefined) {
                     const change = price - prevClose;
                     const changePercent = (change / prevClose) * 100;
+                    const colorClass = change >= 0 ? 'c-green' : 'c-red';
+                    const sign = change >= 0 ? '+' : '';
 
-                    // UI Güncelleme
-                    const el = document.getElementById(elementId);
-                    if (el) {
-                        const colorClass = change >= 0 ? 'c-green' : 'c-red';
-                        const sign = change >= 0 ? '+' : '';
-                        el.innerHTML = `
+                    el.innerHTML = `
                         <div style="text-align:right;">
                             <div style="font-size:1.1rem; font-weight:bold;">${price.toFixed(2)} ₺</div>
                             <div class="${colorClass}" style="font-size:0.85rem;">
@@ -671,12 +699,10 @@
                             </div>
                         </div>
                     `;
-                    }
                 }
             } catch (error) {
                 console.error(`${symbol} fiyatı çekilemedi:`, error);
-                const el = document.getElementById(elementId);
-                if (el) el.innerHTML = '<span style="color:#666; font-size:0.8rem;">Veri yok (Local)</span>';
+                // Hata durumunda UI'ı bozma, eski değer kalsın veya basit uyarı ver
             }
         }
 
